@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LRU Property License Map</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <style>
         body {
@@ -27,12 +30,25 @@
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         }
+        #controls #title {
+            display: inline-block;
+            font-size: 13px;
+            margin-bottom: 5px;
+        }
+        #controls #title a {
+            color: #e63946;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        #controls #title a:hover {
+            text-decoration: underline;
+        }
         #controls select {
-            margin: 5px;
-            padding: 5px 10px;
+            margin: 2px;
+            padding: 3px 6px;
             border-radius: 4px;
             border: 1px solid #ccc;
-            font-size: 14px;
+            font-size: 13px;
         }
         #loading {
             position: absolute;
@@ -53,6 +69,7 @@
 <body>
     <div id="loading">Loading map data...</div>
     <div id="controls">
+        <div id="title">An <a href="https://londonrentersunion.org" target="_blank">LRU</a> Project</div>
         <select id="landlordFilter">
             <option value="">&lt;All landlords...&gt;</option>
         </select>
@@ -74,6 +91,7 @@
 
         let allData = [];
         let allMarkers = [];
+        let markerClusterGroup = L.markerClusterGroup();
         
         // Add jitter to coordinates
         function addJitter(value) {
@@ -84,22 +102,22 @@
         function updateMarkers() {
             const landlordFilter = document.getElementById('landlordFilter').value;
             const agentFilter = document.getElementById('agentFilter').value;
-            
-            // Clear existing
-            allMarkers.forEach(marker => map.removeLayer(marker));
+
+            // Clear existing markers from cluster group
+            markerClusterGroup.clearLayers();
             allMarkers = [];
-            
+
             // Filter and add markers
             const filteredData = allData.filter(row => {
                 const matchesLandlord = !landlordFilter || row.Landlord === landlordFilter;
                 const matchesAgent = !agentFilter || row.Agent === agentFilter;
                 return matchesLandlord && matchesAgent;
             });
-            
+
             filteredData.forEach(row => {
                 const lat = addJitter(row.latitude || row.Latitude || row.lat);
                 const lng = addJitter(row.longitude || row.Longitude || row.lng || row.lon);
-                
+
                 if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
                     let popupContent = '<div style="max-width: 200px;">';
                     Object.keys(row).forEach(key => {
@@ -108,13 +126,17 @@
                         }
                     });
                     popupContent += '</div>';
-                    
-                    const marker = L.marker([lat, lng]).addTo(map);
+
+                    const marker = L.marker([lat, lng]);
                     marker.bindPopup(popupContent);
+                    markerClusterGroup.addLayer(marker);
                     allMarkers.push(marker);
                 }
             });
-            
+
+            // Add cluster group to map
+            map.addLayer(markerClusterGroup);
+
             // Fit map to show all markers
             if (allMarkers.length > 0) {
                 const group = new L.featureGroup(allMarkers);
@@ -156,22 +178,32 @@
                     .forEach(([landlord, count]) => {
                         const option = document.createElement('option');
                         option.value = landlord;
-                        option.textContent = `${landlord} (${count})`;
+                        const displayName = landlord.length > 30 ? landlord.substring(0, 30) + '...' : landlord;
+                        option.textContent = `${displayName} (${count})`;
+                        option.title = landlord; // Show full name on hover
                         landlordSelect.appendChild(option);
                     });
-                
+
                 Object.entries(agentCounts)
                     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
                     .forEach(([agent, count]) => {
                         const option = document.createElement('option');
                         option.value = agent;
-                        option.textContent = `${agent} (${count})`;
+                        const displayName = agent.length > 30 ? agent.substring(0, 30) + '...' : agent;
+                        option.textContent = `${displayName} (${count})`;
+                        option.title = agent; // Show full name on hover
                         agentSelect.appendChild(option);
                     });
                 
                 // Add event listeners
-                landlordSelect.addEventListener('change', updateMarkers);
-                agentSelect.addEventListener('change', updateMarkers);
+                landlordSelect.addEventListener('change', () => {
+                    agentSelect.value = '';
+                    updateMarkers();
+                });
+                agentSelect.addEventListener('change', () => {
+                    landlordSelect.value = '';
+                    updateMarkers();
+                });
                 
                 // Initial display
                 updateMarkers();
