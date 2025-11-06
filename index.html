@@ -152,7 +152,7 @@
                 
                 // Sort by count (highest first) and populate
                 Object.entries(landlordCounts)
-                    .sort((a, b) => b[1] - a[1])
+                    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
                     .forEach(([landlord, count]) => {
                         const option = document.createElement('option');
                         option.value = landlord;
@@ -161,7 +161,7 @@
                     });
                 
                 Object.entries(agentCounts)
-                    .sort((a, b) => b[1] - a[1])
+                    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
                     .forEach(([agent, count]) => {
                         const option = document.createElement('option');
                         option.value = agent;
