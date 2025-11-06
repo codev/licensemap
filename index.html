@@ -134,31 +134,40 @@
                 document.getElementById('loading').classList.add('hidden');
                 allData = results.data;
                 
-                // Fill landlord and agent dropdowns with unique values
-                const landlords = new Set();
-                const agents = new Set();
+                // Count occurrences and populate dropdowns
+                const landlordCounts = {};
+                const agentCounts = {};
                 
                 allData.forEach(row => {
-                    if (row.Landlord) landlords.add(row.Landlord);
-                    if (row.Agent) agents.add(row.Agent);
+                    if (row.Landlord) {
+                        landlordCounts[row.Landlord] = (landlordCounts[row.Landlord] || 0) + 1;
+                    }
+                    if (row.Agent) {
+                        agentCounts[row.Agent] = (agentCounts[row.Agent] || 0) + 1;
+                    }
                 });
                 
                 const landlordSelect = document.getElementById('landlordFilter');
                 const agentSelect = document.getElementById('agentFilter');
                 
-                Array.from(landlords).sort().forEach(landlord => {
-                    const option = document.createElement('option');
-                    option.value = landlord;
-                    option.textContent = landlord;
-                    landlordSelect.appendChild(option);
-                });
+                // Sort by count (highest first) and populate
+                Object.entries(landlordCounts)
+                    .sort((a, b) => b[1] - a[1])
+                    .forEach(([landlord, count]) => {
+                        const option = document.createElement('option');
+                        option.value = landlord;
+                        option.textContent = `${landlord} (${count})`;
+                        landlordSelect.appendChild(option);
+                    });
                 
-                Array.from(agents).sort().forEach(agent => {
-                    const option = document.createElement('option');
-                    option.value = agent;
-                    option.textContent = agent;
-                    agentSelect.appendChild(option);
-                });
+                Object.entries(agentCounts)
+                    .sort((a, b) => b[1] - a[1])
+                    .forEach(([agent, count]) => {
+                        const option = document.createElement('option');
+                        option.value = agent;
+                        option.textContent = `${agent} (${count})`;
+                        agentSelect.appendChild(option);
+                    });
                 
                 // Add event listeners
                 landlordSelect.addEventListener('change', updateMarkers);
