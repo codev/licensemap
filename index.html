@@ -17,6 +17,23 @@
             width: 100%;
             height: 100vh;
         }
+        #controls {
+            position: absolute;
+            top: 10px;
+            left: 50px;
+            z-index: 1000;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        #controls select {
+            margin: 5px;
+            padding: 5px 10px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+        }
         #loading {
             position: absolute;
             top: 50%;
@@ -35,17 +52,75 @@
 </head>
 <body>
     <div id="loading">Loading map data...</div>
+    <div id="controls">
+        <select id="landlordFilter">
+            <option value="">&lt;All&gt;</option>
+        </select>
+        <select id="agentFilter">
+            <option value="">&lt;All&gt;</option>
+        </select>
+    </div>
     <div id="map"></div>
 
     <script>
-        // Initialize map
+        // init map
         const map = L.map('map').setView([0, 0], 2);
         
-        // Add OpenStreetMap tiles
+        // Add OSM tiles
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors',
             maxZoom: 19
         }).addTo(map);
+
+        let allData = [];
+        let allMarkers = [];
+        
+        // Add jitter to coordinates (about 10-50 meters)
+        function addJitter(value) {
+            return value + (Math.random() - 0.5) * 0.0005;
+        }
+        
+        // Filter and display markers
+        function updateMarkers() {
+            const landlordFilter = document.getElementById('landlordFilter').value;
+            const agentFilter = document.getElementById('agentFilter').value;
+            
+            // Clear existing
+            allMarkers.forEach(marker => map.removeLayer(marker));
+            allMarkers = [];
+            
+            // Filter and add markers
+            const filteredData = allData.filter(row => {
+                const matchesLandlord = !landlordFilter || row.Landlord === landlordFilter;
+                const matchesAgent = !agentFilter || row.Agent === agentFilter;
+                return matchesLandlord && matchesAgent;
+            });
+            
+            filteredData.forEach(row => {
+                const lat = addJitter(row.latitude || row.Latitude || row.lat);
+                const lng = addJitter(row.longitude || row.Longitude || row.lng || row.lon);
+                
+                if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
+                    let popupContent = '<div style="max-width: 200px;">';
+                    Object.keys(row).forEach(key => {
+                        if (key.toLowerCase() !== 'latitude' && key.toLowerCase() !== 'longitude' && row[key]) {
+                            popupContent += `<strong>${key}:</strong> ${row[key]}<br>`;
+                        }
+                    });
+                    popupContent += '</div>';
+                    
+                    const marker = L.marker([lat, lng]).addTo(map);
+                    marker.bindPopup(popupContent);
+                    allMarkers.push(marker);
+                }
+            });
+            
+            // Fit map to show all markers
+            if (allMarkers.length > 0) {
+                const group = new L.featureGroup(allMarkers);
+                map.fitBounds(group.getBounds().pad(0.1));
+            }
+        }
 
         // Load and parse CSV
         const csvUrl = 'https://raw.githubusercontent.com/codev/licensemap/main/licenses.csv';
@@ -57,34 +132,40 @@
             skipEmptyLines: true,
             complete: function(results) {
                 document.getElementById('loading').classList.add('hidden');
+                allData = results.data;
                 
-                const markers = [];
+                // Fill landlord and agent dropdowns with unique values
+                const landlords = new Set();
+                const agents = new Set();
                 
-                results.data.forEach(row => {
-                    const lat = row.latitude || row.Latitude || row.lat;
-                    const lng = row.longitude || row.Longitude || row.lng || row.lon;
-                    
-                    if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
-                        // Create popup content from all fields
-                        let popupContent = '<div style="max-width: 200px;">';
-                        Object.keys(row).forEach(key => {
-                            if (key.toLowerCase() !== 'latitude' && key.toLowerCase() !== 'longitude' && row[key]) {
-                                popupContent += `<strong>${key}:</strong> ${row[key]}<br>`;
-                            }
-                        });
-                        popupContent += '</div>';
-                        
-                        const marker = L.marker([lat, lng]).addTo(map);
-                        marker.bindPopup(popupContent);
-                        markers.push(marker);
-                    }
+                allData.forEach(row => {
+                    if (row.Landlord) landlords.add(row.Landlord);
+                    if (row.Agent) agents.add(row.Agent);
                 });
                 
-                // Fit map to show all markers
-                if (markers.length > 0) {
-                    const group = new L.featureGroup(markers);
-                    map.fitBounds(group.getBounds().pad(0.1));
-                }
+                const landlordSelect = document.getElementById('landlordFilter');
+                const agentSelect = document.getElementById('agentFilter');
+                
+                Array.from(landlords).sort().forEach(landlord => {
+                    const option = document.createElement('option');
+                    option.value = landlord;
+                    option.textContent = landlord;
+                    landlordSelect.appendChild(option);
+                });
+                
+                Array.from(agents).sort().forEach(agent => {
+                    const option = document.createElement('option');
+                    option.value = agent;
+                    option.textContent = agent;
+                    agentSelect.appendChild(option);
+                });
+                
+                // Add event listeners
+                landlordSelect.addEventListener('change', updateMarkers);
+                agentSelect.addEventListener('change', updateMarkers);
+                
+                // Initial display
+                updateMarkers();
             },
             error: function(error) {
                 document.getElementById('loading').innerHTML = 'Error loading data: ' + error.message;
