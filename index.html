@@ -7,9 +7,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slim-select/2.8.2/slimselect.min.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/slim-select/2.8.2/slimselect.min.js"></script>
     <style>
         body {
             margin: 0;
@@ -50,6 +52,13 @@
             border: 1px solid #ccc;
             font-size: 13px;
         }
+        #controls .ss-main {
+            font-size: 13px;
+            background-color: #eee;
+            color: black;
+            margin: 2px;
+            min-width: auto;
+        }
         #controls input[type="text"] {
             width: 150px;
         }
@@ -72,6 +81,7 @@
         .hidden {
             display: none;
         }
+
     </style>
 </head>
 <body>
@@ -87,7 +97,7 @@
         <select id="boroughFilter">
             <option value="">&lt;All boroughs...&gt;</option>
         </select>
-        <input type="text" id="postcodeFilter" placeholder="Postcode (e.g., E1)">
+        <input type="text" id="postcodeFilter" placeholder="Postcode">
         <span id="resultCount"></span>
     </div>
     <div id="map"></div>
@@ -255,30 +265,57 @@
                     boroughSelect.appendChild(option);
                 });
 
-            // Add event listeners
-            landlordSelect.addEventListener('change', () => {
-                agentSelect.value = '';
-                boroughSelect.value = '';
-                document.getElementById('postcodeFilter').value = '';
-                updateMarkers();
+            // Initialize slim-select for landlord dropdown
+            const landlordSlimSelect = new SlimSelect({
+                select: '#landlordFilter',
+                settings: {
+                    showSearch: true,
+                    searchPlaceholder: 'Search landlords...',
+                    searchHighlight: true,
+                    closeOnSelect: true
+                },
+                events: {
+                    afterChange: () => {
+                        agentSlimSelect.setSelected('');
+                        boroughSelect.value = '';
+                        document.getElementById('postcodeFilter').value = '';
+                        updateMarkers();
+                    }
+                }
             });
-            agentSelect.addEventListener('change', () => {
-                landlordSelect.value = '';
-                boroughSelect.value = '';
-                document.getElementById('postcodeFilter').value = '';
-                updateMarkers();
+
+            // Initialize slim-select for agent dropdown
+            const agentSlimSelect = new SlimSelect({
+                select: '#agentFilter',
+                settings: {
+                    showSearch: true,
+                    searchPlaceholder: 'Search agents...',
+                    searchHighlight: true,
+                    closeOnSelect: true
+                },
+                events: {
+                    afterChange: () => {
+                        landlordSlimSelect.setSelected('');
+                        boroughSelect.value = '';
+                        document.getElementById('postcodeFilter').value = '';
+                        updateMarkers();
+                    }
+                }
             });
+
+            // Add event listener for borough (keep as regular select)
             boroughSelect.addEventListener('change', () => {
-                landlordSelect.value = '';
-                agentSelect.value = '';
+                landlordSlimSelect.setSelected('');
+                agentSlimSelect.setSelected('');
                 document.getElementById('postcodeFilter').value = '';
                 updateMarkers();
             });
 
+            // Add event listener for postcode input
             const postcodeInput = document.getElementById('postcodeFilter');
             postcodeInput.addEventListener('input', () => {
-                landlordSelect.value = '';
-                agentSelect.value = '';
+                landlordSlimSelect.setSelected('');
+                agentSlimSelect.setSelected('');
                 boroughSelect.value = '';
                 updateMarkers();
             });
