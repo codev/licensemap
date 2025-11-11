@@ -171,107 +171,123 @@
             }
         }
 
-        // Load and parse CSV
-        const csvUrl = 'https://raw.githubusercontent.com/codev/licensemap/main/licenses.csv';
-        
-        Papa.parse(csvUrl, {
-            download: true,
-            header: true,
-            dynamicTyping: true,
-            skipEmptyLines: true,
-            complete: function(results) {
-                document.getElementById('loading').classList.add('hidden');
-                allData = results.data;
-                
-                // Count occurrences and populate dropdowns
-                const landlordCounts = {};
-                const agentCounts = {};
-                const boroughCounts = {};
+        // Load and parse multiple CSV files
+        const csvUrls = [
+            'https://raw.githubusercontent.com/codev/licensemap/main/licenses.csv', // From the metastreet scraper
+            'https://raw.githubusercontent.com/codev/licensemap/main/newham.csv' // From https://johnathaninkley.github.io/newhamLicenseMapper/ - converted json, no agents or license numbers
+        ];
 
-                allData.forEach(row => {
-                    if (row.Landlord) {
-                        landlordCounts[row.Landlord] = (landlordCounts[row.Landlord] || 0) + 1;
-                    }
-                    if (row.Agent) {
-                        agentCounts[row.Agent] = (agentCounts[row.Agent] || 0) + 1;
-                    }
-                    if (row.Borough) {
-                        boroughCounts[row.Borough] = (boroughCounts[row.Borough] || 0) + 1;
+        // Load all CSV files in parallel
+        Promise.all(csvUrls.map(url =>
+            new Promise((resolve, reject) => {
+                Papa.parse(url, {
+                    download: true,
+                    header: true,
+                    dynamicTyping: true,
+                    skipEmptyLines: true,
+                    complete: results => resolve(results.data),
+                    error: error => {
+                        console.error(`Error loading ${url}:`, error);
+                        resolve([]);  // Return empty array on error to continue
                     }
                 });
+            })
+        )).then(results => {
+            document.getElementById('loading').classList.add('hidden');
 
-                const landlordSelect = document.getElementById('landlordFilter');
-                const agentSelect = document.getElementById('agentFilter');
-                const boroughSelect = document.getElementById('boroughFilter');
-                
-                // Sort by count (highest first) and populate
-                Object.entries(landlordCounts)
-                    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-                    .forEach(([landlord, count]) => {
-                        const option = document.createElement('option');
-                        option.value = landlord;
-                        const displayName = landlord.length > 30 ? landlord.substring(0, 30) + '...' : landlord;
-                        option.textContent = `${displayName} (${count})`;
-                        option.title = landlord; // Show full name on hover
-                        landlordSelect.appendChild(option);
-                    });
+            // Combine data from all CSV files
+            allData = results.flat();
 
-                Object.entries(agentCounts)
-                    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-                    .forEach(([agent, count]) => {
-                        const option = document.createElement('option');
-                        option.value = agent;
-                        const displayName = agent.length > 30 ? agent.substring(0, 30) + '...' : agent;
-                        option.textContent = `${displayName} (${count})`;
-                        option.title = agent; // Show full name on hover
-                        agentSelect.appendChild(option);
-                    });
+            console.log(`Loaded ${allData.length} total properties from ${csvUrls.length} CSV files`);
 
-                Object.entries(boroughCounts)
-                    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-                    .forEach(([borough, count]) => {
-                        const option = document.createElement('option');
-                        option.value = borough;
-                        const displayName = borough.length > 30 ? borough.substring(0, 30) + '...' : borough;
-                        option.textContent = `${displayName} (${count})`;
-                        option.title = borough; // Show full name on hover
-                        boroughSelect.appendChild(option);
-                    });
+            // Count occurrences and populate dropdowns
+            const landlordCounts = {};
+            const agentCounts = {};
+            const boroughCounts = {};
 
-                // Add event listeners
-                landlordSelect.addEventListener('change', () => {
-                    agentSelect.value = '';
-                    boroughSelect.value = '';
-                    document.getElementById('postcodeFilter').value = '';
-                    updateMarkers();
-                });
-                agentSelect.addEventListener('change', () => {
-                    landlordSelect.value = '';
-                    boroughSelect.value = '';
-                    document.getElementById('postcodeFilter').value = '';
-                    updateMarkers();
-                });
-                boroughSelect.addEventListener('change', () => {
-                    landlordSelect.value = '';
-                    agentSelect.value = '';
-                    document.getElementById('postcodeFilter').value = '';
-                    updateMarkers();
+            allData.forEach(row => {
+                if (row.Landlord) {
+                    landlordCounts[row.Landlord] = (landlordCounts[row.Landlord] || 0) + 1;
+                }
+                if (row.Agent) {
+                    agentCounts[row.Agent] = (agentCounts[row.Agent] || 0) + 1;
+                }
+                if (row.Borough) {
+                    boroughCounts[row.Borough] = (boroughCounts[row.Borough] || 0) + 1;
+                }
+            });
+
+            const landlordSelect = document.getElementById('landlordFilter');
+            const agentSelect = document.getElementById('agentFilter');
+            const boroughSelect = document.getElementById('boroughFilter');
+
+            // Sort by count (highest first) and populate
+            Object.entries(landlordCounts)
+                .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+                .forEach(([landlord, count]) => {
+                    const option = document.createElement('option');
+                    option.value = landlord;
+                    const displayName = landlord.length > 30 ? landlord.substring(0, 30) + '...' : landlord;
+                    option.textContent = `${displayName} (${count})`;
+                    option.title = landlord; // Show full name on hover
+                    landlordSelect.appendChild(option);
                 });
 
-                const postcodeInput = document.getElementById('postcodeFilter');
-                postcodeInput.addEventListener('input', () => {
-                    landlordSelect.value = '';
-                    agentSelect.value = '';
-                    boroughSelect.value = '';
-                    updateMarkers();
+            Object.entries(agentCounts)
+                .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+                .forEach(([agent, count]) => {
+                    const option = document.createElement('option');
+                    option.value = agent;
+                    const displayName = agent.length > 30 ? agent.substring(0, 30) + '...' : agent;
+                    option.textContent = `${displayName} (${count})`;
+                    option.title = agent; // Show full name on hover
+                    agentSelect.appendChild(option);
                 });
 
-                // Initial display
+            Object.entries(boroughCounts)
+                .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+                .forEach(([borough, count]) => {
+                    const option = document.createElement('option');
+                    option.value = borough;
+                    const displayName = borough.length > 30 ? borough.substring(0, 30) + '...' : borough;
+                    option.textContent = `${displayName} (${count})`;
+                    option.title = borough; // Show full name on hover
+                    boroughSelect.appendChild(option);
+                });
+
+            // Add event listeners
+            landlordSelect.addEventListener('change', () => {
+                agentSelect.value = '';
+                boroughSelect.value = '';
+                document.getElementById('postcodeFilter').value = '';
                 updateMarkers();
-            },
-            error: function(error) {
-                document.getElementById('loading').innerHTML = 'Error loading data: ' + error.message;
-            }
+            });
+            agentSelect.addEventListener('change', () => {
+                landlordSelect.value = '';
+                boroughSelect.value = '';
+                document.getElementById('postcodeFilter').value = '';
+                updateMarkers();
+            });
+            boroughSelect.addEventListener('change', () => {
+                landlordSelect.value = '';
+                agentSelect.value = '';
+                document.getElementById('postcodeFilter').value = '';
+                updateMarkers();
+            });
+
+            const postcodeInput = document.getElementById('postcodeFilter');
+            postcodeInput.addEventListener('input', () => {
+                landlordSelect.value = '';
+                agentSelect.value = '';
+                boroughSelect.value = '';
+                updateMarkers();
+            });
+
+            // Initial display
+            updateMarkers();
+        }).catch(error => {
+            document.getElementById('loading').innerHTML = 'Error loading data: ' + error.message;
+            console.error('Error loading CSV files:', error);
         });
     </script>
 </body>
