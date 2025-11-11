@@ -43,12 +43,20 @@
         #controls #title a:hover {
             text-decoration: underline;
         }
-        #controls select {
+        #controls select, #controls input[type="text"] {
             margin: 2px;
             padding: 3px 6px;
             border-radius: 4px;
             border: 1px solid #ccc;
             font-size: 13px;
+        }
+        #controls input[type="text"] {
+            width: 150px;
+        }
+        #resultCount {
+            margin-left: 5px;
+            font-size: 12px;
+            color: #666;
         }
         #loading {
             position: absolute;
@@ -79,6 +87,8 @@
         <select id="boroughFilter">
             <option value="">&lt;All boroughs...&gt;</option>
         </select>
+        <input type="text" id="postcodeFilter" placeholder="Postcode (e.g., E1)">
+        <span id="resultCount"></span>
     </div>
     <div id="map"></div>
 
@@ -108,6 +118,7 @@
             const landlordFilter = document.getElementById('landlordFilter').value;
             const agentFilter = document.getElementById('agentFilter').value;
             const boroughFilter = document.getElementById('boroughFilter').value;
+            const postcodeFilter = document.getElementById('postcodeFilter').value.replace(/\s/g, '').toUpperCase();
 
             // Clear existing markers from cluster group
             markerClusterGroup.clearLayers();
@@ -118,7 +129,8 @@
                 const matchesLandlord = !landlordFilter || row.Landlord === landlordFilter;
                 const matchesAgent = !agentFilter || row.Agent === agentFilter;
                 const matchesBorough = !boroughFilter || row.Borough === boroughFilter;
-                return matchesLandlord && matchesAgent && matchesBorough;
+                const matchesPostcode = !postcodeFilter || (row.Postcode && row.Postcode.replace(/\s/g, '').toUpperCase().startsWith(postcodeFilter));
+                return matchesLandlord && matchesAgent && matchesBorough && matchesPostcode;
             });
 
             filteredData.forEach(row => {
@@ -148,6 +160,14 @@
             if (allMarkers.length > 0) {
                 const group = new L.featureGroup(allMarkers);
                 map.fitBounds(group.getBounds().pad(0.1));
+            }
+
+            // Update result count
+            const resultCountElement = document.getElementById('resultCount');
+            if (landlordFilter || agentFilter || boroughFilter || postcodeFilter) {
+                resultCountElement.textContent = `${filteredData.length} result${filteredData.length !== 1 ? 's' : ''}`;
+            } else {
+                resultCountElement.textContent = '';
             }
         }
 
@@ -222,19 +242,30 @@
                 landlordSelect.addEventListener('change', () => {
                     agentSelect.value = '';
                     boroughSelect.value = '';
+                    document.getElementById('postcodeFilter').value = '';
                     updateMarkers();
                 });
                 agentSelect.addEventListener('change', () => {
                     landlordSelect.value = '';
                     boroughSelect.value = '';
+                    document.getElementById('postcodeFilter').value = '';
                     updateMarkers();
                 });
                 boroughSelect.addEventListener('change', () => {
                     landlordSelect.value = '';
                     agentSelect.value = '';
+                    document.getElementById('postcodeFilter').value = '';
                     updateMarkers();
                 });
-                
+
+                const postcodeInput = document.getElementById('postcodeFilter');
+                postcodeInput.addEventListener('input', () => {
+                    landlordSelect.value = '';
+                    agentSelect.value = '';
+                    boroughSelect.value = '';
+                    updateMarkers();
+                });
+
                 // Initial display
                 updateMarkers();
             },
