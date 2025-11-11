@@ -76,6 +76,9 @@
         <select id="agentFilter">
             <option value="">&lt;All agents...&gt;</option>
         </select>
+        <select id="boroughFilter">
+            <option value="">&lt;All boroughs...&gt;</option>
+        </select>
     </div>
     <div id="map"></div>
 
@@ -104,6 +107,7 @@
         function updateMarkers() {
             const landlordFilter = document.getElementById('landlordFilter').value;
             const agentFilter = document.getElementById('agentFilter').value;
+            const boroughFilter = document.getElementById('boroughFilter').value;
 
             // Clear existing markers from cluster group
             markerClusterGroup.clearLayers();
@@ -113,7 +117,8 @@
             const filteredData = allData.filter(row => {
                 const matchesLandlord = !landlordFilter || row.Landlord === landlordFilter;
                 const matchesAgent = !agentFilter || row.Agent === agentFilter;
-                return matchesLandlord && matchesAgent;
+                const matchesBorough = !boroughFilter || row.Borough === boroughFilter;
+                return matchesLandlord && matchesAgent && matchesBorough;
             });
 
             filteredData.forEach(row => {
@@ -161,7 +166,8 @@
                 // Count occurrences and populate dropdowns
                 const landlordCounts = {};
                 const agentCounts = {};
-                
+                const boroughCounts = {};
+
                 allData.forEach(row => {
                     if (row.Landlord) {
                         landlordCounts[row.Landlord] = (landlordCounts[row.Landlord] || 0) + 1;
@@ -169,10 +175,14 @@
                     if (row.Agent) {
                         agentCounts[row.Agent] = (agentCounts[row.Agent] || 0) + 1;
                     }
+                    if (row.Borough) {
+                        boroughCounts[row.Borough] = (boroughCounts[row.Borough] || 0) + 1;
+                    }
                 });
-                
+
                 const landlordSelect = document.getElementById('landlordFilter');
                 const agentSelect = document.getElementById('agentFilter');
+                const boroughSelect = document.getElementById('boroughFilter');
                 
                 // Sort by count (highest first) and populate
                 Object.entries(landlordCounts)
@@ -196,14 +206,32 @@
                         option.title = agent; // Show full name on hover
                         agentSelect.appendChild(option);
                     });
-                
+
+                Object.entries(boroughCounts)
+                    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+                    .forEach(([borough, count]) => {
+                        const option = document.createElement('option');
+                        option.value = borough;
+                        const displayName = borough.length > 30 ? borough.substring(0, 30) + '...' : borough;
+                        option.textContent = `${displayName} (${count})`;
+                        option.title = borough; // Show full name on hover
+                        boroughSelect.appendChild(option);
+                    });
+
                 // Add event listeners
                 landlordSelect.addEventListener('change', () => {
                     agentSelect.value = '';
+                    boroughSelect.value = '';
                     updateMarkers();
                 });
                 agentSelect.addEventListener('change', () => {
                     landlordSelect.value = '';
+                    boroughSelect.value = '';
+                    updateMarkers();
+                });
+                boroughSelect.addEventListener('change', () => {
+                    landlordSelect.value = '';
+                    agentSelect.value = '';
                     updateMarkers();
                 });
                 
