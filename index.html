@@ -205,10 +205,10 @@
         }
         /* Ensure popups appear above map controls and filter box */
         .leaflet-popup {
-            z-index: 1100 !important;
+            z-index: 10000 !important;
         }
         .leaflet-popup-pane {
-            z-index: 1100 !important;
+            z-index: 10000 !important;
         }
         #loadingOverlay {
             position: fixed;
@@ -332,7 +332,8 @@
         }
         
         // Load notes from Google Sheets
-        async function loadNotes() {
+        // refreshMarkers: if true, will rebuild all markers (only on initial load)
+        async function loadNotes(refreshMarkers = false) {
             if (GOOGLE_SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
                 console.warn('Google Apps Script URL not configured. Notes feature will not work.');
                 return;
@@ -355,8 +356,15 @@
 
                     console.log(`Loaded ${data.notes.length} notes for ${Object.keys(notesData).length} properties`);
 
-                    // Update markers to reflect notes
-                    updateMarkers();
+                    // Only update markers on initial load, not during auto-refresh
+                    if (refreshMarkers) {
+                        updateMarkers();
+                    } else {
+                        // On auto-refresh, only update the notes panel if it's currently open
+                        if (!document.getElementById('notesPanel').classList.contains('hidden') && selectedProperty) {
+                            updateNotesPanel();
+                        }
+                    }
                 } else {
                     console.error('Error loading notes:', data.error);
                 }
@@ -643,7 +651,7 @@
 
                     // Initial display
                     updateMarkers();
-                    loadNotes();
+                    loadNotes(true); // Pass true to refresh markers on initial load
                     hideLoading();
                 },
                 error: error => {
@@ -677,14 +685,14 @@
         // Load default borough (Hackney) on page load
         loadBorough('hackney');
 
-        // Auto-refresh notes every 10 seconds when page is visible
+        // Auto-refresh notes every 2 minutes when page is visible
         function setupNotesAutoRefresh() {
             setInterval(() => {
                 // Only refresh if page is visible
                 if (!document.hidden) {
                     loadNotes();
                 }
-            }, 10000); // 10 seconds
+            }, 120000); // 2 minutes (120 seconds)
         }
 
         // Start auto-refresh after initial load
