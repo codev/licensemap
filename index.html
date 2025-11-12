@@ -69,6 +69,25 @@
             margin: 0 0 10px 0;
             font-size: 16px;
             color: #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        #notesPanel .close-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #666;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #notesPanel .close-btn:hover {
+            color: #e63946;
         }
         #notesPanel .note-item {
             margin-bottom: 10px;
@@ -169,6 +188,21 @@
         .hidden {
             display: none;
         }
+        .view-notes-btn {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 6px 12px;
+            background: #e63946;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            border: none;
+        }
+        .view-notes-btn:hover {
+            background: #d62839;
+        }
 
     </style>
 </head>
@@ -196,7 +230,10 @@
     <div id="map"></div>
 
     <div id="notesPanel" class="hidden">
-        <h3>Property Notes</h3>
+        <h3>
+            <span>Property Notes</span>
+            <button class="close-btn" id="closeNotesBtn" title="Close notes panel">&times;</button>
+        </h3>
         <div id="notesPanelContent">
             <p class="no-property">Click on a property marker to view and add notes.</p>
         </div>
@@ -288,6 +325,17 @@
             return notesData[address] || [];
         }
 
+        // Open notes panel for a specific property (called from popup button)
+        function openNotesForProperty(address) {
+            // Find the property data by address
+            const property = allData.find(row => (row.Address || row.address) === address);
+            if (property) {
+                selectedProperty = property;
+                document.getElementById('notesPanel').classList.remove('hidden');
+                updateNotesPanel();
+            }
+        }
+
         // Update the notes panel display
         function updateNotesPanel() {
             const contentDiv = document.getElementById('notesPanelContent');
@@ -377,6 +425,9 @@
                         popupContent += `<br><strong style="color: #e63946;">📝 ${noteCount} note${noteCount !== 1 ? 's' : ''}</strong>`;
                     }
 
+                    // Add "View Notes" button
+                    popupContent += `<br><button class="view-notes-btn" onclick="openNotesForProperty('${address.replace(/'/g, "\\'")}')">View Notes</button>`;
+
                     popupContent += '</div>';
 
                     const marker = L.marker([lat, lng]);
@@ -385,11 +436,14 @@
                     // Store property data on marker for click handler
                     marker.propertyData = row;
 
-                    // Add click handler to show notes panel
+                    // Add click handler to show notes panel on wider screens
                     marker.on('click', function() {
                         selectedProperty = this.propertyData;
-                        document.getElementById('notesPanel').classList.remove('hidden');
-                        updateNotesPanel();
+                        // Only auto-open notes panel on desktop
+                        if (window.innerWidth >= 950) {
+                            document.getElementById('notesPanel').classList.remove('hidden');
+                            updateNotesPanel();
+                        }
                     });
 
                     markerClusterGroup.addLayer(marker);
@@ -589,6 +643,17 @@
 
         // Start auto-refresh after initial load
         setupNotesAutoRefresh();
+
+        // Close button functionality
+        document.getElementById('closeNotesBtn').addEventListener('click', function() {
+            document.getElementById('notesPanel').classList.add('hidden');
+            selectedProperty = null;
+        });
+
+        // Close notes panel on mobile by default
+        if (window.innerWidth < 950) {
+            document.getElementById('notesPanel').classList.add('hidden');
+        }
 
         // Note submission functionality
         document.getElementById('submitNoteBtn').addEventListener('click', async function() {
