@@ -52,6 +52,94 @@
             border: 1px solid #ccc;
             font-size: 13px;
         }
+        #notesPanel {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            max-width: 350px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        #notesPanel h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            color: #333;
+        }
+        #notesPanel .note-item {
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            border-left: 3px solid #e63946;
+        }
+        #notesPanel .note-author {
+            font-weight: bold;
+            color: #e63946;
+            font-size: 12px;
+        }
+        #notesPanel .note-text {
+            margin: 5px 0;
+            font-size: 13px;
+        }
+        #notesPanel .note-time {
+            font-size: 11px;
+            color: #666;
+        }
+        #notesPanel .note-form {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 2px solid #eee;
+        }
+        #notesPanel .note-form input,
+        #notesPanel .note-form textarea {
+            width: 100%;
+            margin-bottom: 8px;
+            padding: 6px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 13px;
+            box-sizing: border-box;
+        }
+        #notesPanel .note-form textarea {
+            min-height: 60px;
+            resize: vertical;
+        }
+        #notesPanel .note-form button {
+            background: #e63946;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        #notesPanel .note-form button:hover {
+            background: #d62839;
+        }
+        #notesPanel .note-form button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        #notesPanel .no-property {
+            color: #666;
+            font-style: italic;
+            font-size: 13px;
+        }
+        #notesPanel .error-message {
+            color: #e63946;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        #notesPanel .success-message {
+            color: #4caf50;
+            font-size: 12px;
+            margin-top: 5px;
+        }
         #controls .ss-main {
             font-size: 13px;
             background-color: #eee;
@@ -97,10 +185,29 @@
         <select id="boroughFilter">
             <option value="">&lt;All boroughs...&gt;</option>
         </select>
+        <select id="noteFilter">
+            <option value="">All properties</option>
+            <option value="with">With notes</option>
+            <option value="without">Without notes</option>
+        </select>
         <input type="text" id="postcodeFilter" placeholder="Postcode">
         <span id="resultCount"></span>
     </div>
     <div id="map"></div>
+
+    <div id="notesPanel" class="hidden">
+        <h3>Property Notes</h3>
+        <div id="notesPanelContent">
+            <p class="no-property">Click on a property marker to view and add notes.</p>
+        </div>
+        <div class="note-form">
+            <h4 style="margin: 0 0 8px 0; font-size: 14px;">Add a Note</h4>
+            <input type="text" id="noteAuthorInput" placeholder="Your name" />
+            <textarea id="noteTextInput" placeholder="Enter your note..."></textarea>
+            <button id="submitNoteBtn" disabled>Submit Note</button>
+            <div id="noteFormMessage"></div>
+        </div>
+    </div>
 
     <script>
         // Debounce utility function
@@ -128,6 +235,12 @@
         let allData = [];
         let allMarkers = [];
         let markerClusterGroup = L.markerClusterGroup();
+
+        // Notes feature variables
+        // IMPORTANT: Replace this URL with your deployed Google Apps Script web app URL
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwqePCb9IMNEZvovJjixCX6BIBP7GchaVNhdnNu4NOwyBTpO9xuT-baPtwswPP8CVxr/exec';
+        let notesData = {}; // Will store notes indexed by address
+        let selectedProperty = null; // Currently selected property for note submission
         
         // Add jitter to coordinates
         function addJitter(value) {
@@ -136,12 +249,86 @@
             //return value + (Math.random() - 0.5) * 0.0009;
         }
         
+        // Load notes from Google Sheets
+        async function loadNotes() {
+            if (GOOGLE_SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+                console.warn('Google Apps Script URL not configured. Notes feature will not work.');
+                return;
+            }
+
+            try {
+                const response = await fetch(GOOGLE_SCRIPT_URL);
+                const data = await response.json();
+
+                if (data.success && data.notes) {
+                    // Index notes by address for quick lookup
+                    notesData = {};
+                    data.notes.forEach(note => {
+                        const address = note.address;
+                        if (!notesData[address]) {
+                            notesData[address] = [];
+                        }
+                        notesData[address].push(note);
+                    });
+
+                    console.log(`Loaded ${data.notes.length} notes for ${Object.keys(notesData).length} properties`);
+
+                    // Update markers to reflect notes
+                    updateMarkers();
+                } else {
+                    console.error('Error loading notes:', data.error);
+                }
+            } catch (error) {
+                console.error('Error fetching notes:', error);
+            }
+        }
+
+        // Get notes for a specific address
+        function getNotesForAddress(address) {
+            return notesData[address] || [];
+        }
+
+        // Update the notes panel display
+        function updateNotesPanel() {
+            const contentDiv = document.getElementById('notesPanelContent');
+            const submitBtn = document.getElementById('submitNoteBtn');
+
+            if (!selectedProperty) {
+                contentDiv.innerHTML = '<p class="no-property">Click on a property marker to view and add notes.</p>';
+                submitBtn.disabled = true;
+                return;
+            }
+
+            const address = selectedProperty.Address || selectedProperty.address;
+            const notes = getNotesForAddress(address);
+
+            if (notes.length === 0) {
+                contentDiv.innerHTML = `<p class="no-property">No notes yet for this property.</p>`;
+            } else {
+                let html = '';
+                notes.forEach(note => {
+                    const timestamp = new Date(note.timestamp).toLocaleString();
+                    html += `
+                        <div class="note-item">
+                            <div class="note-author">${note.name}</div>
+                            <div class="note-text">${note.note}</div>
+                            <div class="note-time">${timestamp}</div>
+                        </div>
+                    `;
+                });
+                contentDiv.innerHTML = html;
+            }
+
+            submitBtn.disabled = false;
+        }
+
         // Filter and display markers
         function updateMarkers() {
             const landlordFilter = document.getElementById('landlordFilter').value;
             const agentFilter = document.getElementById('agentFilter').value;
             const boroughFilter = document.getElementById('boroughFilter').value;
             const postcodeFilter = document.getElementById('postcodeFilter').value.replace(/\s/g, '').toUpperCase();
+            const noteFilter = document.getElementById('noteFilter').value;
 
             // Clear existing markers from cluster group
             markerClusterGroup.clearLayers();
@@ -153,7 +340,20 @@
                 const matchesAgent = !agentFilter || row.Agent === agentFilter;
                 const matchesBorough = !boroughFilter || row.Borough === boroughFilter;
                 const matchesPostcode = !postcodeFilter || (row._normalizedPostcode && row._normalizedPostcode.startsWith(postcodeFilter));
-                return matchesLandlord && matchesAgent && matchesBorough && matchesPostcode;
+
+                // Note filter
+                let matchesNotes = true;
+                if (noteFilter) {
+                    const address = row.Address || row.address;
+                    const hasNotes = address && notesData[address] && notesData[address].length > 0;
+                    if (noteFilter === 'with') {
+                        matchesNotes = hasNotes;
+                    } else if (noteFilter === 'without') {
+                        matchesNotes = !hasNotes;
+                    }
+                }
+
+                return matchesLandlord && matchesAgent && matchesBorough && matchesPostcode && matchesNotes;
             });
 
             filteredData.forEach(row => {
@@ -161,16 +361,37 @@
                 const lng = addJitter(row.longitude || row.Longitude || row.lng || row.lon);
 
                 if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
+                    const address = row.Address || row.address;
+                    const notes = getNotesForAddress(address);
+                    const noteCount = notes.length;
+
                     let popupContent = '<div style="max-width: 200px;">';
                     Object.keys(row).forEach(key => {
                         if (key.toLowerCase() !== 'latitude' && key.toLowerCase() !== 'longitude' && !key.startsWith('_') && row[key]) {
                             popupContent += `<strong>${key}:</strong> ${row[key]}<br>`;
                         }
                     });
+
+                    // Add notes count to popup
+                    if (noteCount > 0) {
+                        popupContent += `<br><strong style="color: #e63946;">📝 ${noteCount} note${noteCount !== 1 ? 's' : ''}</strong>`;
+                    }
+
                     popupContent += '</div>';
 
                     const marker = L.marker([lat, lng]);
                     marker.bindPopup(popupContent);
+
+                    // Store property data on marker for click handler
+                    marker.propertyData = row;
+
+                    // Add click handler to show notes panel
+                    marker.on('click', function() {
+                        selectedProperty = this.propertyData;
+                        document.getElementById('notesPanel').classList.remove('hidden');
+                        updateNotesPanel();
+                    });
+
                     markerClusterGroup.addLayer(marker);
                     allMarkers.push(marker);
                 }
@@ -331,6 +552,11 @@
                 updateMarkers();
             });
 
+            // Add event listener for note filter
+            document.getElementById('noteFilter').addEventListener('change', () => {
+                updateMarkers();
+            });
+
             // Add debounced event listener for postcode input
             const postcodeInput = document.getElementById('postcodeFilter');
             const debouncedUpdate = debounce(() => {
@@ -343,9 +569,96 @@
 
             // Initial display
             updateMarkers();
+
+            // Load notes from Google Sheets
+            loadNotes();
         }).catch(error => {
             document.getElementById('loading').innerHTML = 'Error loading data: ' + error.message;
             console.error('Error loading CSV files:', error);
+        });
+
+        // Auto-refresh notes every 10 seconds when page is visible
+        function setupNotesAutoRefresh() {
+            setInterval(() => {
+                // Only refresh if page is visible
+                if (!document.hidden) {
+                    loadNotes();
+                }
+            }, 10000); // 10 seconds
+        }
+
+        // Start auto-refresh after initial load
+        setupNotesAutoRefresh();
+
+        // Note submission functionality
+        document.getElementById('submitNoteBtn').addEventListener('click', async function() {
+            const authorInput = document.getElementById('noteAuthorInput');
+            const textInput = document.getElementById('noteTextInput');
+            const messageDiv = document.getElementById('noteFormMessage');
+
+            const author = authorInput.value.trim();
+            const noteText = textInput.value.trim();
+
+            // Clear previous messages
+            messageDiv.innerHTML = '';
+
+            // Validate inputs
+            if (!author || !noteText) {
+                messageDiv.innerHTML = '<div class="error-message">Please enter both your name and a note.</div>';
+                return;
+            }
+
+            if (!selectedProperty) {
+                messageDiv.innerHTML = '<div class="error-message">No property selected.</div>';
+                return;
+            }
+
+            if (GOOGLE_SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+                messageDiv.innerHTML = '<div class="error-message">Google Apps Script URL not configured.</div>';
+                return;
+            }
+
+            const address = selectedProperty.Address || selectedProperty.address;
+
+            // Disable button during submission
+            this.disabled = true;
+            this.textContent = 'Submitting...';
+
+            try {
+                const response = await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // Required for Google Apps Script
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        address: address,
+                        name: author,
+                        note: noteText
+                    })
+                });
+
+                // Note: With no-cors mode, we can't read the response
+                // But we can assume success and reload notes
+                messageDiv.innerHTML = '<div class="success-message">Note submitted successfully!</div>';
+
+                // Clear form
+                authorInput.value = '';
+                textInput.value = '';
+
+                // Reload notes after a short delay to allow Google Sheets to update
+                setTimeout(() => {
+                    loadNotes();
+                    messageDiv.innerHTML = '';
+                }, 1500);
+
+            } catch (error) {
+                console.error('Error submitting note:', error);
+                messageDiv.innerHTML = '<div class="error-message">Error submitting note. Please try again.</div>';
+            } finally {
+                this.disabled = false;
+                this.textContent = 'Submit Note';
+            }
         });
     </script>
 </body>
