@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>License Map - A London Renters Union project v1.14</title>
+    <title>License Map - A London Renters Union project v1.15</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
@@ -241,7 +241,7 @@
         <div class="spinner"></div>
         <p>Loading property data...</p>
         <p style="font-size: 14px; margin-top: 15px;">A London Renters Union project</p>
-        <p style="font-size: 14px; max-width: 400px; text-align: center; line-height: 1.4; color: #666;">
+        <p style="font-size: 14px; max-width: 400px; padding-left: 15px; padding-right: 15px; text-align: center; line-height: 1.4; color: #666;">
             Licensing data on public registers is often out of date.<br>
             Unlicensed properties are a major problem, please bear this in mind if using these maps for outreach.
         </p>
@@ -761,12 +761,12 @@
                     // Initial display
                     updateMarkers();
 
-                    // On initial load, wait for both notes to load and minimum 4-second duration
+                    // On initial load, wait for both notes to load and minimum 6-second duration
                     if (isInitialLoad) {
                         // Create a promise for the minimum loading time
                         const minLoadTime = new Promise(resolve => {
                             const elapsed = Date.now() - startTime;
-                            const remaining = Math.max(0, 4000 - elapsed);
+                            const remaining = Math.max(0, 6000 - elapsed);
                             setTimeout(resolve, remaining);
                         });
 
@@ -813,7 +813,7 @@
         // Load default borough (Hackney) on page load
         // Reset the dropdown to Hackney to prevent browser form persistence from showing wrong borough
         document.getElementById('boroughSelector').value = 'hackney';
-        loadBorough('hackney', true); // true = isInitialLoad, wait for notes and show loading for min 4 seconds
+        loadBorough('hackney', true); // true = isInitialLoad, wait for notes and show loading for min 6 seconds
 
         // Auto-refresh notes every 2 minutes when page is visible
         // 2025-11-21 Disabled by Marc, refresh page to get new notes
