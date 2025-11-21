@@ -247,7 +247,9 @@
         <select id="boroughSelector">
             <option value="hackney">Hackney</option>
             <option value="haringey">Haringey</option>
+            <option value="islington">Islington</option>
             <option value="lambeth">Lambeth</option>
+            <option value="lewisham">Lewisham</option>
             <option value="newham">Newham</option>
             <option value="walthamforest">Waltham Forest</option>
         </select>
@@ -316,6 +318,26 @@
         const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwqePCb9IMNEZvovJjixCX6BIBP7GchaVNhdnNu4NOwyBTpO9xuT-baPtwswPP8CVxr/exec';
         let notesData = {}; // Will store notes indexed by address
         let selectedProperty = null; // Currently selected property for note submission
+
+        // Borough licensing register URLs
+        const LICENSING_URLS = {
+            "Hackney": "https://propertylicensing.hackney.gov.uk/public-register",
+            "Haringey": "https://propertylicensing.haringey.gov.uk/public-register",
+            "Barking and Dagenham": "https://lbbd.metastreet.co.uk/public-register",
+            "Croydon": "https://landlordlicensing.croydon.gov.uk/public-register",
+            "Ealing": "https://ealing.metastreet.co.uk/public-register",
+            "Enfield": "https://enfield.metastreet.co.uk/public-register",
+            "Greenwich": "https://greenwich.metastreet.co.uk/public-register",
+            "Havering": "https://housingpropertylicence.havering.gov.uk/public-register",
+            "Islington": "https://propertylicensing.islington.gov.uk/public-register",
+            "Kensington and Chelsea": "https://rbkc.metastreet.co.uk/public-register",
+            "Lambeth": "https://hmolicensing.lambeth.gov.uk/public-register",
+            "Lewisham": "https://lewisham.metastreet.co.uk/public-register",
+            "Newham": "https://www.newham.gov.uk/landlords-newham/rented-property-licensing/6",
+            "Southwark": "https://southwark.metastreet.co.uk/public-register",
+            "Waltham Forest": "https://propertylicensing.walthamforest.gov.uk/public-register",
+            "Westminster": "https://westminster.metastreet.co.uk/public-register",
+        };
         
         // Add jitter to coordinates
         function addJitter(value) {
@@ -463,6 +485,12 @@
                             popupContent += `<strong>${key}:</strong> ${row[key]}<br>`;
                         }
                     });
+
+                    // Add licensing register link
+                    const borough = row.Borough || row.borough;
+                    if (borough && LICENSING_URLS[borough]) {
+                        popupContent += `<br><a href="${LICENSING_URLS[borough]}" target="_blank" style="color: #e63946; text-decoration: none; font-weight: bold;">${borough} Licensing Register</a>`;
+                    }
 
                     // Add notes count to popup
                     if (noteCount > 0) {
