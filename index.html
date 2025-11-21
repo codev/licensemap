@@ -240,6 +240,11 @@
     <div id="loadingOverlay" class="hidden">
         <div class="spinner"></div>
         <p>Loading property data...</p>
+        <p style="font-size: 14px; margin-top: 15px;">A London Renters Union project</p>
+        <p style="font-size: 14px; max-width: 400px; text-align: center; line-height: 1.4; color: #666;">
+            Licensing data on public registers is often out of date.<br>
+            Unlicensed properties are a major problem, please bear this in mind if using these maps for outreach.
+        </p>
     </div>
 
     <div id="controls">
@@ -635,8 +640,11 @@
         }
 
         // Load CSV for a specific borough
-        function loadBorough(borough) {
+        function loadBorough(borough, isInitialLoad = false) {
             showLoading();
+
+            // Track start time for minimum loading duration on initial load
+            const startTime = Date.now();
 
             // Clear existing data
             allData = [];
@@ -651,7 +659,7 @@
                 header: true,
                 dynamicTyping: true,
                 skipEmptyLines: true,
-                complete: results => {
+                complete: async results => {
                     allData = results.data;
 
                     // Pre-normalize postcodes for faster filtering
@@ -752,7 +760,26 @@
 
                     // Initial display
                     updateMarkers();
-                    loadNotes(true); // Pass true to refresh markers on initial load
+
+                    // On initial load, wait for both notes to load and minimum 4-second duration
+                    if (isInitialLoad) {
+                        // Create a promise for the minimum loading time
+                        const minLoadTime = new Promise(resolve => {
+                            const elapsed = Date.now() - startTime;
+                            const remaining = Math.max(0, 4000 - elapsed);
+                            setTimeout(resolve, remaining);
+                        });
+
+                        // Wait for both notes to load and minimum time to pass
+                        await Promise.all([
+                            loadNotes(true), // Pass true to refresh markers on initial load
+                            minLoadTime
+                        ]);
+                    } else {
+                        // On borough change, don't wait for notes
+                        loadNotes(true); // Pass true to refresh markers
+                    }
+
                     hideLoading();
                 },
                 error: error => {
@@ -784,17 +811,20 @@
         });
 
         // Load default borough (Hackney) on page load
-        loadBorough('hackney');
+        // Reset the dropdown to Hackney to prevent browser form persistence from showing wrong borough
+        document.getElementById('boroughSelector').value = 'hackney';
+        loadBorough('hackney', true); // true = isInitialLoad, wait for notes and show loading for min 4 seconds
 
         // Auto-refresh notes every 2 minutes when page is visible
-        function setupNotesAutoRefresh() {
-            setInterval(() => {
-                // Only refresh if page is visible
-                if (!document.hidden) {
-                    loadNotes();
-                }
-            }, 120000); // 2 minutes (120 seconds)
-        }
+        // 2025-11-21 Disabled by Marc, refresh page to get new notes
+        // function setupNotesAutoRefresh() {
+        //     setInterval(() => {
+        //         // Only refresh if page is visible
+        //         if (!document.hidden) {
+        //             loadNotes();
+        //         }
+        //     }, 120000); // 2 minutes (120 seconds)
+        // }
 
         // Start auto-refresh after initial load
         setupNotesAutoRefresh();
