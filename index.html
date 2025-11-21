@@ -245,7 +245,7 @@
     <div id="controls">
         <div id="title"><a href="https://github.com/codev/licensemap">License Map</a> - An <a href="https://londonrentersunion.org" target="_blank">LRU</a> project</div>
         <select id="boroughSelector">
-            <option value="hackney">Hackney</option>
+            <option value="hackney" selected="selected">Hackney</option>
             <option value="haringey">Haringey</option>
             <option value="islington">Islington</option>
             <option value="lambeth">Lambeth</option>
@@ -321,6 +321,69 @@
 
         // Borough licensing register URLs
         const LICENSING_URLS = {
+            "Hackney": "https://www.hackney.gov.uk/property-licensing",
+            "Haringey": "https://www.haringey.gov.uk/housing/property-licensing",
+            "Barking and Dagenham": "https://www.lbbd.gov.uk/private-sector-housing/licensing",
+            "Croydon": "https://www.croydon.gov.uk/housing/landlords",
+            "Ealing": "https://www.ealing.gov.uk/info/201086/housing_and_council_tax/3306/private_rented_property_licensing",
+            "Enfield": "https://www.enfield.gov.uk/services/housing/private-rented-property-licensing",
+            "Greenwich": "http://www.royalgreenwich.gov.uk/info/200069/multiple_occupancy_homes/937/hmo_licensing",
+            "Havering": "https://www.havering.gov.uk/info/20060/information_for_landlords/336/guidance_on_letting_your_property_to_multiple_residents",
+            "Islington": "https://www.islington.gov.uk/housing/private-sector-housing/landlords/houses-in-multiple-occupation-hmos",
+            "Kensington and Chelsea": "http://www.rbkc.gov.uk/housing/livinginhealthyhomes/housesinmultipleoccupation.aspx",
+            "Lambeth": "https://www.lambeth.gov.uk/housing/landlords-licensing",
+            "Lewisham": "https://lewisham.gov.uk/myservices/housing/private-tenants-and-landlords/landlords",
+            "Southwark": "https://www.southwark.gov.uk/housing/private-tenants-and-landlords/private-rented-property-licensing",
+            "Waltham Forest": "https://www.walthamforest.gov.uk/service-categories/private-landlords",
+            "Westminster": "https://www.westminster.gov.uk/housing/private-sector-housing",
+            "Newham": "http://www.newham.gov.uk/Pages/Services/Private-rented-property-licensing.aspx",
+            "Tower Hamlets": "https://www.towerhamlets.gov.uk/lgnl/housing/Private-tenants-landlords-and-homeowners/Private-Landlords/Landlord_Licensing_Schemes.aspx",
+            "Brent": "https://www.brent.gov.uk/housing/landlords/property-licensing#findoutifyouneedalicence",
+            "Redbridge": "https://www.redbridge.gov.uk/housing/private-rentals/",
+        };
+      const LICENSING_EMAILS = {
+            "Hackney": "property.licensing@hackney.gov.uk",
+            "Haringey": "propertylicensing@haringey.gov.uk",
+            "Barking and Dagenham": "PRPL@lbbd.gov.uk",
+            "Croydon": "hmo@croydon.gov.uk",
+            "Ealing": "prslicensing@ealing.gov.uk",
+            "Enfield": "prsh@enfield.gov.uk",
+            "Greenwich": "private-rented-property-licensing@royalgreenwich.gov.uk",
+            "Havering": "landlordlicensing@havering.gov.uk",
+            "Islington": "property.licensing@islington.gov.uk",
+            "Kensington and Chelsea": "hmolicensing@rbkc.gov.uk",
+            "Lambeth": "prslicensing@lambeth.gov.uk",
+            "Lewisham": "pshe@lewisham.gov.uk",
+            "Southwark": "resi@southwark.gov.uk",
+            "Waltham Forest": "propertylicensing@walthamforest.gov.uk",
+            "Westminster": "HMO@westminster.gov.uk ",
+            "Newham": "propertylicensing@newham.gov.uk",
+            "Tower Hamlets": "housinglicensing@towerhamlets.gov.uk",
+            "Brent": "prslicensing@brent.gov.uk",
+            "Redbridge": "prslicensing@redbridge.gov.uk",
+        };
+      const OTHER_LICENSE_DETAILS = {
+            "Hackney": "",
+            "Haringey": "",
+            "Barking and Dagenham": "",
+            "Croydon": "",
+            "Ealing": "",
+            "Enfield": "",
+            "Greenwich": "",
+            "Havering": "",
+            "Islington": "",
+            "Kensington and Chelsea": "",
+            "Lambeth": "",
+            "Lewisham": "",
+            "Southwark": "",
+            "Waltham Forest": "",
+            "Westminster": "",
+            "Newham": "",
+            "Tower Hamlets": "",
+            "Brent": "",
+            "Redbridge": "",
+        };
+      const REGISTER_URLS = {
             "Hackney": "https://propertylicensing.hackney.gov.uk/public-register",
             "Haringey": "https://propertylicensing.haringey.gov.uk/public-register",
             "Barking and Dagenham": "https://lbbd.metastreet.co.uk/public-register",
@@ -333,10 +396,13 @@
             "Kensington and Chelsea": "https://rbkc.metastreet.co.uk/public-register",
             "Lambeth": "https://hmolicensing.lambeth.gov.uk/public-register",
             "Lewisham": "https://lewisham.metastreet.co.uk/public-register",
-            "Newham": "https://www.newham.gov.uk/landlords-newham/rented-property-licensing/6",
             "Southwark": "https://southwark.metastreet.co.uk/public-register",
             "Waltham Forest": "https://propertylicensing.walthamforest.gov.uk/public-register",
             "Westminster": "https://westminster.metastreet.co.uk/public-register",
+            "Newham": "https://www.newham.gov.uk/landlords-newham/rented-property-licensing/6",
+            "Tower Hamlets": "https://www.towerhamlets.gov.uk/lgnl/housing/Private-tenants-landlords-and-homeowners/Private-Landlords/Private-landlords.aspx",
+            "Brent": "https://www.brent.gov.uk/-/media/files/resident-documents/housing-documents/online-register-of-licenced-properties.pdf?",
+            "Redbridge": "https://propertylicensing.redbridge.gov.uk/online-application/public-register/",
         };
         
         // Add jitter to coordinates
@@ -479,17 +545,29 @@
                     const notes = getNotesForAddress(address);
                     const noteCount = notes.length;
 
-                    let popupContent = '<div style="max-width: 200px;">';
+                    let borough = null;
+                    let popupContent = '<div style="max-width: 250px;">';
                     Object.keys(row).forEach(key => {
-                        if (key.toLowerCase() !== 'latitude' && key.toLowerCase() !== 'longitude' && !key.startsWith('_') && row[key]) {
+                        if (key.toLowerCase() == 'borough') {
+                          borough = row[key];
+                        } else if (key.toLowerCase() !== 'latitude' && key.toLowerCase() !== 'longitude' && !key.startsWith('_') && row[key]) {
                             popupContent += `<strong>${key}:</strong> ${row[key]}<br>`;
                         }
                     });
 
                     // Add licensing register link
-                    const borough = row.Borough || row.borough;
-                    if (borough && LICENSING_URLS[borough]) {
-                        popupContent += `<br><a href="${LICENSING_URLS[borough]}" target="_blank" style="color: #e63946; text-decoration: none; font-weight: bold;">${borough} Licensing Register</a>`;
+                    if (borough) {
+                        popupContent += `<br><strong>${borough}</strong>`;
+                        if (LICENSING_URLS[borough]) {
+                          popupContent += ` - <a href="${LICENSING_URLS[borough]}" target="_blank" style="color: #e63946; text-decoration: none;">Council website</a>`;
+                        }
+                        if (REGISTER_URLS[borough]) {
+                          popupContent += ` - <a href="${REGISTER_URLS[borough]}" target="_blank" style="color: #e63946; text-decoration: none;">Public register</a>`;
+                        }
+                        if (LICENSING_EMAILS[borough]) {
+                          popupContent += ` - <span>Email:</span> <span style="overflow-wrap: break-word; word-wrap: break-word;">${LICENSING_EMAILS[borough]}</span>`;
+                        }
+                        popupContent += '<br>';
                     }
 
                     // Add notes count to popup
