@@ -216,6 +216,58 @@
         .hidden {
             display: none !important;
         }
+        /* Modal styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+        }
+        .modal-header h3 {
+            margin: 0;
+            font-size: 18px;
+            color: #333;
+        }
+        .modal-close-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #666;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            line-height: 30px;
+            text-align: center;
+        }
+        .modal-close-btn:hover {
+            color: #e63946;
+        }
+        .modal-body {
+            padding: 20px;
+        }
         .view-notes-btn {
             display: inline-block;
             margin-top: 8px;
@@ -604,6 +656,23 @@
     </div>
 
     <div id="copyNotification">Copied to clipboard!</div>
+
+    <!-- Add Note Modal for List View -->
+    <div id="addNoteModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Note</h3>
+                <button class="modal-close-btn" id="closeNoteModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="modalPropertyAddress" style="margin-bottom: 15px; font-weight: bold; color: #333;"></div>
+                <input type="text" id="modalNoteAuthorInput" placeholder="Your name" style="width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;" />
+                <textarea id="modalNoteTextInput" placeholder="Enter your note on doorknocking/licensing etc..." style="width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; min-height: 100px; resize: vertical;"></textarea>
+                <button id="modalSubmitNoteBtn" style="padding: 10px 20px; background: #e63946; color: white; border: none; border-radius: 4px; font-size: 14px; cursor: pointer;">Submit Note</button>
+                <div id="modalNoteFormMessage" style="margin-top: 10px;"></div>
+            </div>
+        </div>
+    </div>
 
     <div id="controls">
         <div id="title"><a href="https://github.com/codev/licensemap">License Map</a> - An <a href="https://londonrentersunion.org" target="_blank">LRU</a> project</div>
@@ -1535,6 +1604,8 @@
 
             // Add Notes column at the end
             tableColumns.push('Notes');
+            // Add Actions column
+            tableColumns.push('Actions');
 
             // Render headers
             const headersRow = document.getElementById('tableHeaders');
@@ -1542,9 +1613,11 @@
             tableColumns.forEach(column => {
                 const th = document.createElement('th');
                 th.textContent = column;
-                th.className = 'sortable';
-                th.dataset.column = column;
-                th.addEventListener('click', () => sortTable(column));
+                if (column !== 'Actions') {
+                    th.className = 'sortable';
+                    th.dataset.column = column;
+                    th.addEventListener('click', () => sortTable(column));
+                }
                 headersRow.appendChild(th);
             });
 
@@ -1554,7 +1627,11 @@
             tableColumns.forEach(column => {
                 const th = document.createElement('th');
 
-                if (column === 'Notes') {
+                if (column === 'Actions') {
+                    // Empty cell for Actions column
+                    filtersRow.appendChild(th);
+                    return;
+                } else if (column === 'Notes') {
                     // Special dropdown filter for Notes column
                     const select = document.createElement('select');
                     select.style.width = '100%';
@@ -1708,6 +1785,31 @@
                         } else {
                             td.textContent = '';
                         }
+                    } else if (column === 'Actions') {
+                        // Add "Add Note" button
+                        const addNoteBtn = document.createElement('button');
+                        addNoteBtn.textContent = 'Add Note';
+                        addNoteBtn.className = 'add-note-btn';
+                        addNoteBtn.style.padding = '5px 10px';
+                        addNoteBtn.style.fontSize = '12px';
+                        addNoteBtn.style.background = 'white';
+                        addNoteBtn.style.color = '#111';
+                        addNoteBtn.style.border = '2px solid #e63946';
+                        addNoteBtn.style.borderRadius = '4px';
+                        addNoteBtn.style.cursor = 'pointer';
+                        addNoteBtn.addEventListener('click', (e) => {
+                            e.stopPropagation(); // Prevent row click
+                            openAddNoteModal(row);
+                        });
+                        addNoteBtn.addEventListener('mouseenter', function() {
+                            this.style.background = '#e63946';
+                            this.style.color = 'white';
+                        });
+                        addNoteBtn.addEventListener('mouseleave', function() {
+                            this.style.background = 'white';
+                            this.style.color = '#111';
+                        });
+                        td.appendChild(addNoteBtn);
                     } else {
                         td.textContent = row[column] || '';
                         td.title = row[column] || ''; // Tooltip for long values
@@ -1964,7 +2066,8 @@
                 // Add click handler for highlight and copy
                 card.addEventListener('click', () => highlightCard(card, row));
 
-                // Add all fields
+                // Add all fields and track the last one
+                let lastFieldDiv = null;
                 for (let key in row) {
                     if (!key.startsWith('_') &&
                         key.toLowerCase() !== 'latitude' &&
@@ -1989,6 +2092,8 @@
                         fieldDiv.appendChild(nameSpan);
                         fieldDiv.appendChild(valueSpan);
                         card.appendChild(fieldDiv);
+
+                        lastFieldDiv = fieldDiv; // Track the last field
                     }
                 }
 
@@ -2022,6 +2127,62 @@
                     });
 
                     card.appendChild(notesSection);
+                }
+
+                // Add compact "+N" button inline with the last field row
+                if (lastFieldDiv) {
+                    // Wrap existing field content in a span for left alignment
+                    const contentWrapper = document.createElement('span');
+                    while (lastFieldDiv.firstChild) {
+                        contentWrapper.appendChild(lastFieldDiv.firstChild);
+                    }
+
+                    // Make the last field a flex container
+                    lastFieldDiv.style.display = 'flex';
+                    lastFieldDiv.style.justifyContent = 'space-between';
+                    lastFieldDiv.style.alignItems = 'center';
+
+                    // Add wrapped content back
+                    lastFieldDiv.appendChild(contentWrapper);
+
+                    // Create compact button
+                    const addNoteBtn = document.createElement('button');
+                    addNoteBtn.textContent = '+N';
+                    addNoteBtn.className = 'add-note-btn-compact';
+                    addNoteBtn.style.padding = '4px 9px';
+                    addNoteBtn.style.fontSize = '11px';
+                    addNoteBtn.style.background = 'white';
+                    addNoteBtn.style.color = '#111';
+                    addNoteBtn.style.border = '1px solid #e63946';
+                    addNoteBtn.style.borderRadius = '3px';
+                    addNoteBtn.style.cursor = 'pointer';
+                    addNoteBtn.style.flexShrink = '0';
+                    addNoteBtn.style.marginLeft = '8px';
+                    addNoteBtn.style.lineHeight = '1';
+                    addNoteBtn.addEventListener('click', (e) => {
+                        e.stopPropagation(); // Prevent card click
+                        openAddNoteModal(row);
+                    });
+                    addNoteBtn.addEventListener('mouseenter', function() {
+                        this.style.background = '#e63946';
+                        this.style.color = 'white';
+                    });
+                    addNoteBtn.addEventListener('mouseleave', function() {
+                        this.style.background = 'white';
+                        this.style.color = '#111';
+                    });
+                    addNoteBtn.addEventListener('touchstart', function() {
+                        this.style.background = '#e63946';
+                        this.style.color = 'white';
+                    }, { passive: true });
+                    addNoteBtn.addEventListener('touchend', function() {
+                        setTimeout(() => {
+                            this.style.background = 'white';
+                            this.style.color = '#111';
+                        }, 100);
+                    }, { passive: true });
+
+                    lastFieldDiv.appendChild(addNoteBtn);
                 }
 
                 cardsContent.appendChild(card);
@@ -2092,6 +2253,128 @@
                 });
             }
         }
+
+        // ==================== ADD NOTE MODAL FUNCTIONALITY ====================
+
+        let modalSelectedProperty = null; // Property for modal note submission
+
+        // Open the add note modal
+        function openAddNoteModal(rowData) {
+            modalSelectedProperty = rowData;
+            const modal = document.getElementById('addNoteModal');
+            const addressDiv = document.getElementById('modalPropertyAddress');
+            const messageDiv = document.getElementById('modalNoteFormMessage');
+
+            // Display property address
+            const address = rowData.Address || rowData.address || 'Unknown address';
+            addressDiv.textContent = `Property: ${address}`;
+
+            // Clear form and messages
+            document.getElementById('modalNoteAuthorInput').value = '';
+            document.getElementById('modalNoteTextInput').value = '';
+            messageDiv.innerHTML = '';
+
+            // Show modal
+            modal.classList.remove('hidden');
+        }
+
+        // Close the add note modal
+        function closeAddNoteModal() {
+            const modal = document.getElementById('addNoteModal');
+            modal.classList.add('hidden');
+            modalSelectedProperty = null;
+        }
+
+        // Close modal when clicking X button
+        document.getElementById('closeNoteModal').addEventListener('click', closeAddNoteModal);
+
+        // Close modal when clicking outside of it
+        document.getElementById('addNoteModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeAddNoteModal();
+            }
+        });
+
+        // Handle modal note submission
+        document.getElementById('modalSubmitNoteBtn').addEventListener('click', async function() {
+            const authorInput = document.getElementById('modalNoteAuthorInput');
+            const textInput = document.getElementById('modalNoteTextInput');
+            const messageDiv = document.getElementById('modalNoteFormMessage');
+
+            const author = authorInput.value.trim();
+            const noteText = textInput.value.trim();
+
+            // Clear previous messages
+            messageDiv.innerHTML = '';
+
+            // Validate inputs
+            if (!author || !noteText) {
+                messageDiv.innerHTML = '<div style="color: #e63946; font-size: 12px;">Please enter both your name and a note.</div>';
+                return;
+            }
+
+            if (!modalSelectedProperty) {
+                messageDiv.innerHTML = '<div style="color: #e63946; font-size: 12px;">No property selected.</div>';
+                return;
+            }
+
+            if (GOOGLE_SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+                messageDiv.innerHTML = '<div style="color: #e63946; font-size: 12px;">Google Apps Script URL not configured.</div>';
+                return;
+            }
+
+            const address = modalSelectedProperty.Address || modalSelectedProperty.address;
+
+            // Disable button during submission
+            this.disabled = true;
+            this.textContent = 'Submitting...';
+            this.style.background = '#999';
+
+            try {
+                const response = await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // Required for Google Apps Script
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        address: address,
+                        name: author,
+                        note: noteText
+                    })
+                });
+
+                // Note: With no-cors mode, we can't read the response
+                // But we can assume success and reload notes
+                messageDiv.innerHTML = '<div style="color: #28a745; font-size: 12px;">Note submitted successfully!</div>';
+
+                // Clear form
+                authorInput.value = '';
+                textInput.value = '';
+
+                // Reload notes after a short delay to allow Google Sheets to update
+                setTimeout(() => {
+                    loadNotes();
+                    closeAddNoteModal();
+                    // Refresh the current view
+                    if (currentView === 'list') {
+                        if (window.innerWidth <= 768) {
+                            filterAndRenderMobileCards();
+                        } else {
+                            filterAndRenderTableRows();
+                        }
+                    }
+                }, 1500);
+
+            } catch (error) {
+                console.error('Error submitting note:', error);
+                messageDiv.innerHTML = '<div style="color: #e63946; font-size: 12px;">Error submitting note. Please try again.</div>';
+            } finally {
+                this.disabled = false;
+                this.textContent = 'Submit Note';
+                this.style.background = '#e63946';
+            }
+        });
 
         // Mobile filter toggle
         document.getElementById('mobileFiltersToggle').addEventListener('click', function() {
