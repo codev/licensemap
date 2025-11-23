@@ -52,6 +52,21 @@
             border: 1px solid #ccc;
             font-size: 13px;
         }
+        #controls button {
+            margin: 2px;
+            padding: 3px 10px;
+            border-radius: 4px;
+            border: 2px solid #e63946;
+            font-size: 13px;
+            background: #fff;
+            color: #111;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        #controls button:hover {
+            background: #e63946;
+            color: white;
+        }
         #notesPanel {
             position: absolute;
             top: 10px;
@@ -174,6 +189,19 @@
             font-size: 12px;
             color: #666;
         }
+        #mapLicensingInfo {
+            margin-top: 8px;
+            font-size: 13px;
+            line-height: 1.5;
+            max-width: 300px;
+        }
+        #mapLicensingInfo a {
+            color: #e63946;
+            text-decoration: none;
+        }
+        #mapLicensingInfo a:hover {
+            text-decoration: underline;
+        }
         #loading {
             position: absolute;
             top: 50%;
@@ -234,6 +262,334 @@
             color: #333;
         }
 
+        /* List View Styles */
+        #listViewContainer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: white;
+            z-index: 500;
+            overflow-y: auto;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        #listViewHeader {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e63946;
+        }
+        #listViewLicensingInfo {
+            margin-top: 7px;
+            display: inline-block;
+            line-height: 1.4;
+        }
+        #listViewLicensingInfo a:hover {
+            text-decoration: underline;
+        }
+        #tableContainer {
+            overflow-x: auto;
+            overflow-y: auto;
+            max-height: calc(100vh - 150px);
+        }
+        #propertyTable {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            background: white;
+        }
+        #propertyTable thead {
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 10;
+        }
+        #propertyTable th {
+            background: #e63946;
+            color: white;
+            padding: 10px 8px;
+            text-align: left;
+            font-weight: bold;
+            border: 1px solid #d62839;
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+        #propertyTable th:hover {
+            background: #d62839;
+        }
+        #propertyTable th.sortable::after {
+            content: ' ⇅';
+            opacity: 0.5;
+        }
+        #propertyTable th.sort-asc::after {
+            content: ' ▲';
+            opacity: 1;
+        }
+        #propertyTable th.sort-desc::after {
+            content: ' ▼';
+            opacity: 1;
+        }
+        #propertyTable td {
+            padding: 8px;
+            border: 1px solid #ddd;
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            vertical-align: top;
+        }
+        #propertyTable tbody tr {
+            transition: background-color 0.2s;
+        }
+        #propertyTable tbody tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        #propertyTable tbody tr:hover {
+            background: #f0f0f0;
+        }
+        #propertyTable tbody tr.selected {
+            background: #ffe5e7 !important;
+            border-left: 4px solid #e63946;
+        }
+        #tableFilters input {
+            width: 100%;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-size: 12px;
+            box-sizing: border-box;
+        }
+        #tableFilters th {
+            background: #f5f5f5;
+            padding: 5px;
+            cursor: default;
+        }
+        #tableFilters th:hover {
+            background: #f5f5f5;
+        }
+        #listViewMapButton {
+            padding: 6px 12px;
+            border-radius: 4px;
+            border: 2px solid #e63946;
+            background: #fff;
+            color: #111;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        #listViewMapButton:hover {
+            background: #e63946;
+            color: white;
+        }
+        #copyNotification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #4caf50;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 10001;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        #copyNotification.show {
+            opacity: 1;
+        }
+
+        /* Mobile List View Styles */
+        #mobileCardsContainer {
+            display: none;
+        }
+        #mobileFiltersSection {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+        #mobileFiltersToggle {
+            width: 100%;
+            padding: 8px 10px;
+            background: #e63946;
+            color: white;
+            border: none;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        #mobileFiltersToggle:hover {
+            background: #d62839;
+        }
+        #mobileFiltersContent {
+            padding: 10px;
+            display: none;
+        }
+        #mobileFiltersContent.show {
+            display: block;
+        }
+        #mobileFiltersContent input,
+        #mobileFiltersContent select {
+            width: 100%;
+            padding: 6px;
+            margin-bottom: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 13px;
+            box-sizing: border-box;
+        }
+        #mobileFiltersContent label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 3px;
+            font-size: 12px;
+        }
+        #mobileColumnFilters {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #ddd;
+        }
+        #mobileColumnFilters .filter-group {
+            margin-bottom: 8px;
+        }
+        #mobileSortSection {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        #mobileSortSection select {
+            flex: 1;
+            padding: 6px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        #mobileSortDirection {
+            padding: 6px 10px;
+            background: #fff;
+            border: 2px solid #e63946;
+            color: #111;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+        #mobileSortDirection:hover {
+            background: #e63946;
+            color: white;
+        }
+        .property-card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .property-card:hover {
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+        .property-card.selected {
+            background: #ffe5e7;
+            border-color: #e63946;
+            border-width: 2px;
+            box-shadow: 0 3px 8px rgba(230, 57, 70, 0.3);
+        }
+        .property-card-field {
+            margin-bottom: 1px;
+            line-height: 1.3;
+        }
+        .property-card-field-name {
+            font-weight: bold;
+            color: #666;
+            font-size: 12px;
+            display: inline;
+        }
+        .property-card-field-value {
+            color: #333;
+            font-size: 14px;
+            display: inline;
+            word-wrap: break-word;
+        }
+        .property-card-notes {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 2px solid #e63946;
+        }
+        .property-card-notes-title {
+            font-weight: bold;
+            color: #e63946;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+        .property-card-note {
+            margin-bottom: 6px;
+            padding: 6px;
+            background: #f9f9f9;
+            border-radius: 4px;
+        }
+        .property-card-note-author {
+            font-weight: bold;
+            color: #e63946;
+            font-size: 12px;
+        }
+        .property-card-note-text {
+            color: #333;
+            font-size: 13px;
+            margin-top: 4px;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            #listViewContainer {
+                padding: 10px;
+            }
+            #listViewHeader h2 {
+                font-size: 16px;
+            }
+            #listViewHeader > div {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            #tableContainer {
+                display: none;
+            }
+            #mobileCardsContainer {
+                display: block;
+            }
+            #listViewMapButton {
+                padding: 4px 8px;
+                font-size: 12px;
+            }
+            #copyNotification {
+                bottom: 80px;
+                right: 10px;
+                left: 10px;
+                text-align: center;
+                z-index: 99999;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #mobileSortSection {
+                flex-direction: column;
+            }
+            #mobileSortSection select,
+            #mobileSortDirection {
+                width: 100%;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -246,6 +602,8 @@
             Unlicensed properties are a major problem, please bear this in mind if using these maps for outreach.
         </p>
     </div>
+
+    <div id="copyNotification">Copied to clipboard!</div>
 
     <div id="controls">
         <div id="title"><a href="https://github.com/codev/licensemap">License Map</a> - An <a href="https://londonrentersunion.org" target="_blank">LRU</a> project</div>
@@ -260,6 +618,7 @@
             <option value="towerhamlets">Tower Hamlets</option>
             <option value="walthamforest">Waltham Forest</option>
         </select>
+        <button id="viewToggle">Switch to List View</button>
         <select id="landlordFilter">
             <option value="">&lt;All landlords...&gt;</option>
         </select>
@@ -273,8 +632,81 @@
         </select>
         <input type="text" id="postcodeFilter" placeholder="Postcode">
         <span id="resultCount"></span>
+        <div id="mapLicensingInfo"></div>
     </div>
     <div id="map"></div>
+
+    <div id="listViewContainer" class="hidden">
+        <div id="listViewHeader">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h2 style="margin: 0; font-size: 18px;">Property List</h2>
+                <button id="listViewMapButton">Switch to Map View</button>
+            </div>
+            <div style="margin-bottom: 10px;">
+                <label for="listViewBoroughSelector" style="margin-right: 5px; font-weight: bold;">Borough:</label>
+                <select id="listViewBoroughSelector" style="padding: 5px; border-radius: 4px; border: 1px solid #ccc; font-size: 13px;">
+                    <option value="brent">Brent</option>
+                    <option value="hackney" selected="selected">Hackney</option>
+                    <option value="haringey">Haringey</option>
+                    <option value="islington">Islington</option>
+                    <option value="lambeth">Lambeth</option>
+                    <option value="lewisham">Lewisham</option>
+                    <option value="newham">Newham</option>
+                    <option value="towerhamlets">Tower Hamlets</option>
+                    <option value="walthamforest">Waltham Forest</option>
+                </select>
+                <span id="listViewResultCount" style="margin-left: 10px; font-size: 13px; color: #666;"></span>
+                <span id="listViewLicensingInfo" style="margin-left: 10px; font-size: 13px;"></span>
+            </div>
+        </div>
+        <div id="tableContainer">
+            <table id="propertyTable">
+                <thead>
+                    <tr id="tableHeaders"></tr>
+                    <tr id="tableFilters"></tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+
+        <div id="mobileCardsContainer">
+            <div id="mobileFiltersSection">
+                <button id="mobileFiltersToggle">
+                    <span>Filters</span>
+                    <span id="mobileFiltersIcon">▼</span>
+                </button>
+                <div id="mobileFiltersContent">
+                    <label for="mobileGlobalSearch">Search All Fields:</label>
+                    <input type="text" id="mobileGlobalSearch" placeholder="Search all fields...">
+
+                    <div id="mobileColumnFilters">
+                        <label style="font-size: 13px; color: #e63946; margin-bottom: 5px;">Filter by Column:</label>
+                        <!-- Column filters will be dynamically added here -->
+                    </div>
+
+                    <label for="mobileNotesFilter">Notes:</label>
+                    <select id="mobileNotesFilter">
+                        <option value="">All properties</option>
+                        <option value="has_notes">Has notes</option>
+                        <option value="no_notes">No notes</option>
+                    </select>
+
+                    <button id="mobileClearFilters" style="width: 100%; padding: 6px; background: #666; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; margin-top: 5px;">Clear All Filters</button>
+                </div>
+            </div>
+
+            <div id="mobileSortSection">
+                <select id="mobileSortColumn">
+                    <option value="">Sort by...</option>
+                </select>
+                <button id="mobileSortDirection" data-direction="asc">↑ Asc</button>
+            </div>
+
+            <div id="mobileResultCount" style="margin-bottom: 10px; font-size: 13px; color: #666;"></div>
+
+            <div id="mobileCardsContent"></div>
+        </div>
+    </div>
 
     <div id="notesPanel" class="hidden">
         <h3>
@@ -325,6 +757,20 @@
         const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwqePCb9IMNEZvovJjixCX6BIBP7GchaVNhdnNu4NOwyBTpO9xuT-baPtwswPP8CVxr/exec';
         let notesData = {}; // Will store notes indexed by address
         let selectedProperty = null; // Currently selected property for note submission
+
+        // List view variables
+        let currentView = 'map'; // 'map' or 'list'
+        let tableColumns = [];
+        let tableFilters = {};
+        let tableSortColumn = null;
+        let tableSortDirection = 'asc';
+
+        // Mobile view variables
+        let mobileGlobalFilter = '';
+        let mobileColumnFilters = {}; // Per-column filters
+        let mobileNotesFilter = '';
+        let mobileSortCol = '';
+        let mobileSortDir = 'asc';
 
         // Borough licensing register URLs
         const LICENSING_URLS = {
@@ -511,6 +957,49 @@
             submitBtn.disabled = false;
         }
 
+        // Update map licensing info in control panel
+        function updateMapLicensingInfo(boroughKey) {
+            // Convert borough key to proper borough name
+            const boroughNames = {
+                'brent': 'Brent',
+                'hackney': 'Hackney',
+                'haringey': 'Haringey',
+                'islington': 'Islington',
+                'lambeth': 'Lambeth',
+                'lewisham': 'Lewisham',
+                'newham': 'Newham',
+                'towerhamlets': 'Tower Hamlets',
+                'walthamforest': 'Waltham Forest'
+            };
+
+            const boroughName = boroughNames[boroughKey] || boroughKey;
+            const licensingUrl = LICENSING_URLS[boroughName];
+            const registerUrl = REGISTER_URLS[boroughName];
+            const email = LICENSING_EMAILS[boroughName];
+
+            let html = '<strong>' + boroughName + ':</strong> ';
+            const links = [];
+
+            if (licensingUrl) {
+                links.push('<a href="' + licensingUrl + '" target="_blank">Council website</a>');
+            }
+
+            if (registerUrl) {
+                links.push('<a href="' + registerUrl + '" target="_blank">Public register</a>');
+            }
+
+            html += links.join(' - ');
+
+            if (email) {
+                html += ' - <span>Email:</span> <span style="overflow-wrap: break-word; word-wrap: break-word;">' + email + '</span>';
+            }
+
+            const mapInfo = document.getElementById('mapLicensingInfo');
+            if (mapInfo) {
+                mapInfo.innerHTML = html;
+            }
+        }
+
         // Filter and display markers
         function updateMarkers() {
             const landlordFilter = document.getElementById('landlordFilter').value;
@@ -552,30 +1041,12 @@
                     const notes = getNotesForAddress(address);
                     const noteCount = notes.length;
 
-                    let borough = null;
                     let popupContent = '<div style="max-width: 250px;">';
                     Object.keys(row).forEach(key => {
-                        if (key.toLowerCase() == 'borough') {
-                          borough = row[key];
-                        } else if (key.toLowerCase() !== 'latitude' && key.toLowerCase() !== 'longitude' && !key.startsWith('_') && row[key]) {
+                        if (key.toLowerCase() !== 'borough' && key.toLowerCase() !== 'latitude' && key.toLowerCase() !== 'longitude' && !key.startsWith('_') && row[key]) {
                             popupContent += `<strong>${key}:</strong> ${row[key]}<br>`;
                         }
                     });
-
-                    // Add licensing register link
-                    if (borough) {
-                        popupContent += `<br><strong>${borough}</strong>`;
-                        if (LICENSING_URLS[borough]) {
-                          popupContent += ` - <a href="${LICENSING_URLS[borough]}" target="_blank" style="color: #e63946; text-decoration: none;">Council website</a>`;
-                        }
-                        if (REGISTER_URLS[borough]) {
-                          popupContent += ` - <a href="${REGISTER_URLS[borough]}" target="_blank" style="color: #e63946; text-decoration: none;">Public register</a>`;
-                        }
-                        if (LICENSING_EMAILS[borough]) {
-                          popupContent += ` - <span>Email:</span> <span style="overflow-wrap: break-word; word-wrap: break-word;">${LICENSING_EMAILS[borough]}</span>`;
-                        }
-                        popupContent += '<br>';
-                    }
 
                     // Add notes count to popup
                     if (noteCount > 0) {
@@ -651,6 +1122,27 @@
             markerClusterGroup.clearLayers();
             allMarkers = [];
             document.getElementById('postcodeFilter').value = '';
+
+            // Clear table filters and sort
+            tableFilters = {};
+            tableSortColumn = null;
+            tableSortDirection = 'asc';
+
+            // Clear mobile filters and sort
+            mobileGlobalFilter = '';
+            mobileColumnFilters = {};
+            mobileNotesFilter = '';
+            mobileSortCol = '';
+            mobileSortDir = 'asc';
+            if (document.getElementById('mobileGlobalSearch')) {
+                document.getElementById('mobileGlobalSearch').value = '';
+                document.getElementById('mobileNotesFilter').value = '';
+                document.getElementById('mobileColumnFilters').innerHTML = '<label style="font-size: 13px; color: #e63946; margin-bottom: 5px;">Filter by Column:</label>';
+                const mobileSortSelect = document.getElementById('mobileSortColumn');
+                mobileSortSelect.innerHTML = '<option value="">Sort by...</option>'; // Reset dropdown
+                document.getElementById('mobileSortDirection').textContent = '↑ Asc';
+                document.getElementById('mobileSortDirection').dataset.direction = 'asc';
+            }
 
             const csvUrl = `https://raw.githubusercontent.com/codev/licensemap/main/${borough}.csv`;
 
@@ -761,6 +1253,13 @@
                     // Initial display
                     updateMarkers();
 
+                    // Also render table/cards if in list view
+                    if (currentView === 'list') {
+                        updateLicensingInfo(borough);
+                        renderTable();
+                        renderMobileCards();
+                    }
+
                     // On initial load, wait for both notes to load and minimum 6-second duration
                     if (isInitialLoad) {
                         // Create a promise for the minimum loading time
@@ -807,12 +1306,17 @@
         // Add event listener for borough selector
         document.getElementById('boroughSelector').addEventListener('change', function() {
             const selectedBorough = this.value;
+            // Sync with list view borough selector
+            document.getElementById('listViewBoroughSelector').value = selectedBorough;
+            // Update map licensing info
+            updateMapLicensingInfo(selectedBorough);
             loadBorough(selectedBorough);
         });
 
         // Load default borough (Hackney) on page load
         // Reset the dropdown to Hackney to prevent browser form persistence from showing wrong borough
         document.getElementById('boroughSelector').value = 'hackney';
+        updateMapLicensingInfo('hackney');
         loadBorough('hackney', true); // true = isInitialLoad, wait for notes and show loading for min 6 seconds
 
         // Auto-refresh notes every 2 minutes when page is visible
@@ -827,7 +1331,8 @@
         // }
 
         // Start auto-refresh after initial load
-        setupNotesAutoRefresh();
+        // 2025-11-21 Disabled by Marc, refresh page to get new notes
+        // setupNotesAutoRefresh();
 
         // Close button functionality
         document.getElementById('closeNotesBtn').addEventListener('click', function() {
@@ -910,6 +1415,735 @@
                 this.textContent = 'Submit Note';
             }
         });
+
+        // ==================== LIST VIEW FUNCTIONALITY ====================
+
+        // Update licensing info display
+        function updateLicensingInfo(boroughKey) {
+            // Convert borough key to proper borough name
+            const boroughNames = {
+                'brent': 'Brent',
+                'hackney': 'Hackney',
+                'haringey': 'Haringey',
+                'islington': 'Islington',
+                'lambeth': 'Lambeth',
+                'lewisham': 'Lewisham',
+                'newham': 'Newham',
+                'towerhamlets': 'Tower Hamlets',
+                'walthamforest': 'Waltham Forest'
+            };
+
+            const boroughName = boroughNames[boroughKey] || boroughKey;
+            const licensingUrl = LICENSING_URLS[boroughName];
+            const registerUrl = REGISTER_URLS[boroughName];
+            const email = LICENSING_EMAILS[boroughName];
+
+            let html = '<strong>' + boroughName + ':</strong> ';
+            const links = [];
+
+            if (licensingUrl) {
+                links.push('<a href="' + licensingUrl + '" target="_blank" style="color: #e63946; text-decoration: none;">Council website</a>');
+            }
+
+            if (registerUrl) {
+                links.push('<a href="' + registerUrl + '" target="_blank" style="color: #e63946; text-decoration: none;">Public register</a>');
+            }
+
+            html += links.join(' - ');
+
+            if (email) {
+                html += ' - <span>Email:</span> <span style="overflow-wrap: break-word; word-wrap: break-word;">' + email + '</span>';
+            }
+
+            // Update desktop info (visible on both desktop and mobile)
+            const desktopInfo = document.getElementById('listViewLicensingInfo');
+
+            if (desktopInfo) {
+                desktopInfo.innerHTML = html;
+            }
+        }
+
+        // View toggle functionality
+        function switchToListView() {
+            currentView = 'list';
+            document.getElementById('map').classList.add('hidden');
+            document.getElementById('controls').classList.add('hidden');
+            document.getElementById('listViewContainer').classList.remove('hidden');
+            document.getElementById('viewToggle').textContent = 'Switch to Map View';
+
+            // Sync borough selector
+            const mapBorough = document.getElementById('boroughSelector').value;
+            document.getElementById('listViewBoroughSelector').value = mapBorough;
+
+            // Update licensing info
+            updateLicensingInfo(mapBorough);
+
+            // Render table for desktop, cards for mobile
+            renderTable();
+            renderMobileCards();
+        }
+
+        function switchToMapView() {
+            currentView = 'map';
+            document.getElementById('listViewContainer').classList.add('hidden');
+            document.getElementById('map').classList.remove('hidden');
+            document.getElementById('controls').classList.remove('hidden');
+            document.getElementById('viewToggle').textContent = 'Switch to List View';
+        }
+
+        document.getElementById('viewToggle').addEventListener('click', function() {
+            if (currentView === 'map') {
+                switchToListView();
+            } else {
+                switchToMapView();
+            }
+        });
+
+        // List view map button
+        document.getElementById('listViewMapButton').addEventListener('click', function() {
+            switchToMapView();
+        });
+
+        // List view borough selector
+        document.getElementById('listViewBoroughSelector').addEventListener('change', function() {
+            const selectedBorough = this.value;
+            // Sync with map borough selector
+            document.getElementById('boroughSelector').value = selectedBorough;
+            // Update licensing info
+            updateLicensingInfo(selectedBorough);
+            loadBorough(selectedBorough);
+        });
+
+        // Render table from allData
+        function renderTable() {
+            if (allData.length === 0) {
+                document.getElementById('tableBody').innerHTML = '<tr><td colspan="100">No data loaded</td></tr>';
+                return;
+            }
+
+            // Determine columns from first row, excluding internal ones and Borough
+            const firstRow = allData[0];
+            tableColumns = Object.keys(firstRow).filter(key =>
+                !key.startsWith('_') &&
+                key.toLowerCase() !== 'latitude' &&
+                key.toLowerCase() !== 'longitude' &&
+                key.toLowerCase() !== 'lat' &&
+                key.toLowerCase() !== 'lng' &&
+                key.toLowerCase() !== 'lon' &&
+                key.toLowerCase() !== 'borough'
+            );
+
+            // Add Notes column at the end
+            tableColumns.push('Notes');
+
+            // Render headers
+            const headersRow = document.getElementById('tableHeaders');
+            headersRow.innerHTML = '';
+            tableColumns.forEach(column => {
+                const th = document.createElement('th');
+                th.textContent = column;
+                th.className = 'sortable';
+                th.dataset.column = column;
+                th.addEventListener('click', () => sortTable(column));
+                headersRow.appendChild(th);
+            });
+
+            // Render filter inputs
+            const filtersRow = document.getElementById('tableFilters');
+            filtersRow.innerHTML = '';
+            tableColumns.forEach(column => {
+                const th = document.createElement('th');
+
+                if (column === 'Notes') {
+                    // Special dropdown filter for Notes column
+                    const select = document.createElement('select');
+                    select.style.width = '100%';
+                    select.style.padding = '5px';
+                    select.style.border = '1px solid #ccc';
+                    select.style.borderRadius = '3px';
+                    select.style.fontSize = '12px';
+                    select.innerHTML = `
+                        <option value="">All</option>
+                        <option value="has_notes">Has notes</option>
+                        <option value="no_notes">No notes</option>
+                    `;
+                    select.addEventListener('change', (e) => {
+                        tableFilters[column] = e.target.value;
+                        filterAndRenderTableRows();
+                    });
+                    th.appendChild(select);
+                } else {
+                    // Regular text input for other columns
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.placeholder = `Filter ${column}...`;
+                    input.dataset.column = column;
+                    input.addEventListener('input', debounce((e) => {
+                        tableFilters[column] = e.target.value.toLowerCase();
+                        filterAndRenderTableRows();
+                    }, 300));
+                    th.appendChild(input);
+                }
+
+                filtersRow.appendChild(th);
+            });
+
+            // Render data rows
+            filterAndRenderTableRows();
+        }
+
+        // Filter and render table rows
+        function filterAndRenderTableRows() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            // Apply filters
+            let filteredData = allData.filter(row => {
+                for (let column in tableFilters) {
+                    const filterValue = tableFilters[column];
+
+                    if (column === 'Notes') {
+                        // Special handling for Notes filter
+                        if (filterValue) {
+                            const address = row.Address || row.address;
+                            const hasNotes = address && notesData[address] && notesData[address].length > 0;
+
+                            if (filterValue === 'has_notes' && !hasNotes) {
+                                return false;
+                            } else if (filterValue === 'no_notes' && hasNotes) {
+                                return false;
+                            }
+                        }
+                    } else {
+                        // Regular text filter for other columns
+                        if (filterValue && row[column]) {
+                            const cellValue = String(row[column]).toLowerCase();
+                            if (!cellValue.includes(filterValue)) {
+                                return false;
+                            }
+                        } else if (filterValue && !row[column]) {
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            });
+
+            // Apply sorting
+            if (tableSortColumn) {
+                filteredData.sort((a, b) => {
+                    // Special handling for Notes column - sort by number of notes
+                    if (tableSortColumn === 'Notes') {
+                        const aAddress = a.Address || a.address;
+                        const bAddress = b.Address || b.address;
+                        const aNotesCount = (aAddress && notesData[aAddress]) ? notesData[aAddress].length : 0;
+                        const bNotesCount = (bAddress && notesData[bAddress]) ? notesData[bAddress].length : 0;
+                        return tableSortDirection === 'asc' ? aNotesCount - bNotesCount : bNotesCount - aNotesCount;
+                    }
+
+                    let aVal = a[tableSortColumn] || '';
+                    let bVal = b[tableSortColumn] || '';
+
+                    // Try to compare as numbers if possible
+                    const aNum = parseFloat(aVal);
+                    const bNum = parseFloat(bVal);
+                    if (!isNaN(aNum) && !isNaN(bNum)) {
+                        return tableSortDirection === 'asc' ? aNum - bNum : bNum - aNum;
+                    }
+
+                    // Otherwise compare as strings
+                    aVal = String(aVal).toLowerCase();
+                    bVal = String(bVal).toLowerCase();
+                    if (aVal < bVal) return tableSortDirection === 'asc' ? -1 : 1;
+                    if (aVal > bVal) return tableSortDirection === 'asc' ? 1 : -1;
+                    return 0;
+                });
+            }
+
+            // Render rows
+            filteredData.forEach((row, index) => {
+                const tr = document.createElement('tr');
+                tr.dataset.rowIndex = index;
+
+                // Store row data for clipboard copy
+                tr.rowData = row;
+
+                tr.addEventListener('click', () => highlightRow(tr, row));
+
+                tableColumns.forEach(column => {
+                    const td = document.createElement('td');
+
+                    if (column === 'Notes') {
+                        // Special handling for Notes column
+                        const address = row.Address || row.address;
+                        const notes = getNotesForAddress(address);
+
+                        if (notes.length > 0) {
+                            // Format notes for display with HTML
+                            td.innerHTML = '';
+                            notes.forEach((note, idx) => {
+                                const noteDiv = document.createElement('div');
+                                noteDiv.style.marginBottom = idx < notes.length - 1 ? '8px' : '0';
+                                noteDiv.style.paddingBottom = idx < notes.length - 1 ? '8px' : '0';
+                                noteDiv.style.borderBottom = idx < notes.length - 1 ? '1px solid #ddd' : 'none';
+
+                                const noteName = document.createElement('div');
+                                noteName.style.fontWeight = 'bold';
+                                noteName.style.color = '#e63946';
+                                noteName.style.fontSize = '12px';
+                                noteName.textContent = `${note.name} - ${new Date(note.timestamp).toLocaleDateString()}`;
+
+                                const noteText = document.createElement('div');
+                                noteText.style.fontSize = '12px';
+                                noteText.style.marginTop = '2px';
+                                noteText.style.color = '#333';
+                                noteText.textContent = note.note;
+
+                                noteDiv.appendChild(noteName);
+                                noteDiv.appendChild(noteText);
+                                td.appendChild(noteDiv);
+                            });
+                            td.style.whiteSpace = 'normal';
+                            td.style.minWidth = '250px';
+                        } else {
+                            td.textContent = '';
+                        }
+                    } else {
+                        td.textContent = row[column] || '';
+                        td.title = row[column] || ''; // Tooltip for long values
+                    }
+
+                    tr.appendChild(td);
+                });
+
+                tbody.appendChild(tr);
+            });
+
+            // Update result count
+            const resultCountElement = document.getElementById('listViewResultCount');
+            const hasFilters = Object.values(tableFilters).some(v => v !== '');
+            if (hasFilters) {
+                resultCountElement.textContent = `${filteredData.length} of ${allData.length} properties`;
+            } else {
+                resultCountElement.textContent = `${allData.length} properties`;
+            }
+        }
+
+        // Sort table by column
+        function sortTable(column) {
+            // Toggle sort direction if clicking same column, otherwise default to ascending
+            if (tableSortColumn === column) {
+                tableSortDirection = tableSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                tableSortColumn = column;
+                tableSortDirection = 'asc';
+            }
+
+            // Update header classes
+            document.querySelectorAll('#tableHeaders th').forEach(th => {
+                th.classList.remove('sort-asc', 'sort-desc');
+                if (th.dataset.column === column) {
+                    th.classList.add(tableSortDirection === 'asc' ? 'sort-asc' : 'sort-desc');
+                }
+            });
+
+            // Re-render rows with new sort
+            filterAndRenderTableRows();
+        }
+
+        // Highlight selected row and copy to clipboard
+        function highlightRow(tr, rowData) {
+            // Remove previous selection
+            document.querySelectorAll('#tableBody tr').forEach(row => {
+                row.classList.remove('selected');
+            });
+
+            // Add selection to clicked row
+            tr.classList.add('selected');
+
+            // Copy row data to clipboard
+            if (rowData) {
+                // Build clipboard text with all data (excluding internal fields)
+                const clipboardLines = [];
+
+                Object.keys(rowData).forEach(key => {
+                    // Skip internal fields
+                    if (!key.startsWith('_') &&
+                        key.toLowerCase() !== 'latitude' &&
+                        key.toLowerCase() !== 'longitude' &&
+                        key.toLowerCase() !== 'lat' &&
+                        key.toLowerCase() !== 'lng' &&
+                        key.toLowerCase() !== 'lon') {
+
+                        const value = rowData[key];
+                        if (value !== null && value !== undefined && value !== '') {
+                            clipboardLines.push(`${key}: ${value}`);
+                        }
+                    }
+                });
+
+                // Add notes if available
+                const address = rowData.Address || rowData.address;
+                const notes = getNotesForAddress(address);
+                if (notes.length > 0) {
+                    clipboardLines.push(''); // Empty line separator
+                    clipboardLines.push('Notes:');
+                    notes.forEach(note => {
+                        clipboardLines.push(`  - ${note.name} (${new Date(note.timestamp).toLocaleString()}): ${note.note}`);
+                    });
+                }
+
+                const clipboardText = clipboardLines.join('\n');
+
+                // Copy to clipboard
+                navigator.clipboard.writeText(clipboardText).then(() => {
+                    console.log('Property details copied to clipboard');
+
+                    // Show notification
+                    const notification = document.getElementById('copyNotification');
+                    notification.classList.add('show');
+
+                    // Hide after 2 seconds
+                    setTimeout(() => {
+                        notification.classList.remove('show');
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Failed to copy to clipboard:', err);
+                });
+            }
+        }
+
+        // ==================== MOBILE CARDS VIEW FUNCTIONALITY ====================
+
+        // Check if mobile view
+        function isMobileView() {
+            return window.innerWidth <= 768;
+        }
+
+        // Render mobile cards
+        function renderMobileCards() {
+            if (allData.length === 0) {
+                document.getElementById('mobileCardsContent').innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No data loaded</p>';
+                return;
+            }
+
+            // Populate sort dropdown and column filters (only once)
+            const mobileSortSelect = document.getElementById('mobileSortColumn');
+            const mobileColumnFiltersDiv = document.getElementById('mobileColumnFilters');
+
+            if (mobileSortSelect.options.length === 1) { // Only has "Sort by..."
+                const firstRow = allData[0];
+                const columns = Object.keys(firstRow).filter(key =>
+                    !key.startsWith('_') &&
+                    key.toLowerCase() !== 'latitude' &&
+                    key.toLowerCase() !== 'longitude' &&
+                    key.toLowerCase() !== 'lat' &&
+                    key.toLowerCase() !== 'lng' &&
+                    key.toLowerCase() !== 'lon' &&
+                    key.toLowerCase() !== 'borough'
+                );
+
+                // Populate sort dropdown
+                columns.forEach(col => {
+                    const option = document.createElement('option');
+                    option.value = col;
+                    option.textContent = col;
+                    mobileSortSelect.appendChild(option);
+                });
+
+                // Create column filter inputs
+                columns.forEach(col => {
+                    const filterGroup = document.createElement('div');
+                    filterGroup.className = 'filter-group';
+
+                    const label = document.createElement('label');
+                    label.textContent = col + ':';
+                    label.style.fontSize = '12px';
+
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.placeholder = `Filter ${col}...`;
+                    input.dataset.column = col;
+                    input.addEventListener('input', debounce(function(e) {
+                        const column = e.target.dataset.column;
+                        mobileColumnFilters[column] = e.target.value.toLowerCase();
+                        filterAndRenderMobileCards();
+                    }, 300));
+
+                    filterGroup.appendChild(label);
+                    filterGroup.appendChild(input);
+                    mobileColumnFiltersDiv.appendChild(filterGroup);
+                });
+            }
+
+            filterAndRenderMobileCards();
+        }
+
+        // Filter and render mobile cards
+        function filterAndRenderMobileCards() {
+            const cardsContent = document.getElementById('mobileCardsContent');
+            cardsContent.innerHTML = '';
+
+            // Apply filters
+            let filteredData = allData.filter(row => {
+                // Global search filter
+                if (mobileGlobalFilter) {
+                    let found = false;
+                    for (let key in row) {
+                        if (!key.startsWith('_') && row[key]) {
+                            const value = String(row[key]).toLowerCase();
+                            if (value.includes(mobileGlobalFilter)) {
+                                found = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!found) return false;
+                }
+
+                // Column-specific filters
+                for (let column in mobileColumnFilters) {
+                    const filterValue = mobileColumnFilters[column];
+                    if (filterValue) {
+                        if (row[column]) {
+                            const cellValue = String(row[column]).toLowerCase();
+                            if (!cellValue.includes(filterValue)) {
+                                return false;
+                            }
+                        } else {
+                            return false;
+                        }
+                    }
+                }
+
+                // Notes filter
+                if (mobileNotesFilter) {
+                    const address = row.Address || row.address;
+                    const hasNotes = address && notesData[address] && notesData[address].length > 0;
+                    if (mobileNotesFilter === 'has_notes' && !hasNotes) return false;
+                    if (mobileNotesFilter === 'no_notes' && hasNotes) return false;
+                }
+
+                return true;
+            });
+
+            // Apply sorting
+            if (mobileSortCol) {
+                filteredData.sort((a, b) => {
+                    if (mobileSortCol === 'Notes') {
+                        const aAddress = a.Address || a.address;
+                        const bAddress = b.Address || b.address;
+                        const aNotesCount = (aAddress && notesData[aAddress]) ? notesData[aAddress].length : 0;
+                        const bNotesCount = (bAddress && notesData[bAddress]) ? notesData[bAddress].length : 0;
+                        return mobileSortDir === 'asc' ? aNotesCount - bNotesCount : bNotesCount - aNotesCount;
+                    }
+
+                    let aVal = a[mobileSortCol] || '';
+                    let bVal = b[mobileSortCol] || '';
+
+                    const aNum = parseFloat(aVal);
+                    const bNum = parseFloat(bVal);
+                    if (!isNaN(aNum) && !isNaN(bNum)) {
+                        return mobileSortDir === 'asc' ? aNum - bNum : bNum - aNum;
+                    }
+
+                    aVal = String(aVal).toLowerCase();
+                    bVal = String(bVal).toLowerCase();
+                    if (aVal < bVal) return mobileSortDir === 'asc' ? -1 : 1;
+                    if (aVal > bVal) return mobileSortDir === 'asc' ? 1 : -1;
+                    return 0;
+                });
+            }
+
+            // Render cards
+            filteredData.forEach(row => {
+                const card = document.createElement('div');
+                card.className = 'property-card';
+                card.rowData = row;
+
+                // Add click handler for highlight and copy
+                card.addEventListener('click', () => highlightCard(card, row));
+
+                // Add all fields
+                for (let key in row) {
+                    if (!key.startsWith('_') &&
+                        key.toLowerCase() !== 'latitude' &&
+                        key.toLowerCase() !== 'longitude' &&
+                        key.toLowerCase() !== 'lat' &&
+                        key.toLowerCase() !== 'lng' &&
+                        key.toLowerCase() !== 'lon' &&
+                        key.toLowerCase() !== 'borough' &&
+                        row[key]) {
+
+                        const fieldDiv = document.createElement('div');
+                        fieldDiv.className = 'property-card-field';
+
+                        const nameSpan = document.createElement('span');
+                        nameSpan.className = 'property-card-field-name';
+                        nameSpan.textContent = key + ': ';
+
+                        const valueSpan = document.createElement('span');
+                        valueSpan.className = 'property-card-field-value';
+                        valueSpan.textContent = row[key];
+
+                        fieldDiv.appendChild(nameSpan);
+                        fieldDiv.appendChild(valueSpan);
+                        card.appendChild(fieldDiv);
+                    }
+                }
+
+                // Add notes if available
+                const address = row.Address || row.address;
+                const notes = getNotesForAddress(address);
+                if (notes.length > 0) {
+                    const notesSection = document.createElement('div');
+                    notesSection.className = 'property-card-notes';
+
+                    const notesTitle = document.createElement('div');
+                    notesTitle.className = 'property-card-notes-title';
+                    notesTitle.textContent = 'Notes:';
+                    notesSection.appendChild(notesTitle);
+
+                    notes.forEach(note => {
+                        const noteDiv = document.createElement('div');
+                        noteDiv.className = 'property-card-note';
+
+                        const authorDiv = document.createElement('div');
+                        authorDiv.className = 'property-card-note-author';
+                        authorDiv.textContent = `${note.name} - ${new Date(note.timestamp).toLocaleDateString()}`;
+
+                        const textDiv = document.createElement('div');
+                        textDiv.className = 'property-card-note-text';
+                        textDiv.textContent = note.note;
+
+                        noteDiv.appendChild(authorDiv);
+                        noteDiv.appendChild(textDiv);
+                        notesSection.appendChild(noteDiv);
+                    });
+
+                    card.appendChild(notesSection);
+                }
+
+                cardsContent.appendChild(card);
+            });
+
+            // Update result count
+            const resultCountElement = document.getElementById('mobileResultCount');
+            const hasFilters = mobileGlobalFilter || mobileNotesFilter || Object.values(mobileColumnFilters).some(v => v !== '');
+            if (hasFilters) {
+                resultCountElement.textContent = `${filteredData.length} of ${allData.length} properties`;
+            } else {
+                resultCountElement.textContent = `${allData.length} properties`;
+            }
+        }
+
+        // Highlight card and copy to clipboard
+        function highlightCard(card, rowData) {
+            // Remove previous selection
+            document.querySelectorAll('.property-card').forEach(c => {
+                c.classList.remove('selected');
+            });
+
+            // Add selection to clicked card
+            card.classList.add('selected');
+
+            // Copy to clipboard (reuse same logic as table)
+            if (rowData) {
+                const clipboardLines = [];
+
+                Object.keys(rowData).forEach(key => {
+                    if (!key.startsWith('_') &&
+                        key.toLowerCase() !== 'latitude' &&
+                        key.toLowerCase() !== 'longitude' &&
+                        key.toLowerCase() !== 'lat' &&
+                        key.toLowerCase() !== 'lng' &&
+                        key.toLowerCase() !== 'lon') {
+
+                        const value = rowData[key];
+                        if (value !== null && value !== undefined && value !== '') {
+                            clipboardLines.push(`${key}: ${value}`);
+                        }
+                    }
+                });
+
+                const address = rowData.Address || rowData.address;
+                const notes = getNotesForAddress(address);
+                if (notes.length > 0) {
+                    clipboardLines.push('');
+                    clipboardLines.push('Notes:');
+                    notes.forEach(note => {
+                        clipboardLines.push(`  - ${note.name} (${new Date(note.timestamp).toLocaleString()}): ${note.note}`);
+                    });
+                }
+
+                const clipboardText = clipboardLines.join('\n');
+
+                navigator.clipboard.writeText(clipboardText).then(() => {
+                    console.log('Property details copied to clipboard');
+
+                    const notification = document.getElementById('copyNotification');
+                    notification.classList.add('show');
+
+                    setTimeout(() => {
+                        notification.classList.remove('show');
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Failed to copy to clipboard:', err);
+                });
+            }
+        }
+
+        // Mobile filter toggle
+        document.getElementById('mobileFiltersToggle').addEventListener('click', function() {
+            const content = document.getElementById('mobileFiltersContent');
+            const icon = document.getElementById('mobileFiltersIcon');
+            content.classList.toggle('show');
+            icon.textContent = content.classList.contains('show') ? '▲' : '▼';
+        });
+
+        // Mobile global search
+        document.getElementById('mobileGlobalSearch').addEventListener('input', debounce(function(e) {
+            mobileGlobalFilter = e.target.value.toLowerCase();
+            filterAndRenderMobileCards();
+        }, 300));
+
+        // Mobile notes filter
+        document.getElementById('mobileNotesFilter').addEventListener('change', function(e) {
+            mobileNotesFilter = e.target.value;
+            filterAndRenderMobileCards();
+        });
+
+        // Mobile clear filters
+        document.getElementById('mobileClearFilters').addEventListener('click', function() {
+            document.getElementById('mobileGlobalSearch').value = '';
+            document.getElementById('mobileNotesFilter').value = '';
+            mobileGlobalFilter = '';
+            mobileNotesFilter = '';
+            mobileColumnFilters = {};
+
+            // Clear all column filter inputs
+            document.querySelectorAll('#mobileColumnFilters input').forEach(input => {
+                input.value = '';
+            });
+
+            filterAndRenderMobileCards();
+        });
+
+        // Mobile sort column
+        document.getElementById('mobileSortColumn').addEventListener('change', function(e) {
+            mobileSortCol = e.target.value;
+            filterAndRenderMobileCards();
+        });
+
+        // Mobile sort direction
+        document.getElementById('mobileSortDirection').addEventListener('click', function() {
+            mobileSortDir = mobileSortDir === 'asc' ? 'desc' : 'asc';
+            this.textContent = mobileSortDir === 'asc' ? '↑ Asc' : '↓ Desc';
+            if (mobileSortCol) {
+                filterAndRenderMobileCards();
+            }
+        });
+
     </script>
 </body>
 </html>
