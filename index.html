@@ -13,6 +13,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/slim-select/2.8.2/slimselect.min.js"></script>
     <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
         body {
             margin: 0;
             padding: 0;
@@ -28,12 +31,13 @@
             left: 50px;
             z-index: 600;
             background: white;
-            padding: 15px;
+            padding: 5px 15px 10px;
+            max-width: 330px;
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         }
         #controls #title {
-            -display: inline-block;
+            display: inline-block;
             font-size: 13px;
             margin-bottom: 5px;
         }
@@ -215,6 +219,17 @@
         }
         .hidden {
             display: none !important;
+        }
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
         }
         /* Modal styles */
         .modal {
@@ -658,18 +673,20 @@
     <div id="copyNotification">Copied to clipboard!</div>
 
     <!-- Add Note Modal for List View -->
-    <div id="addNoteModal" class="modal hidden">
+    <div id="addNoteModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="addNoteModalTitle">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Add Note</h3>
-                <button class="modal-close-btn" id="closeNoteModal">&times;</button>
+                <h3 id="addNoteModalTitle">Add Note</h3>
+                <button type="button" class="modal-close-btn" id="closeNoteModal" aria-label="Close modal">&times;</button>
             </div>
             <div class="modal-body">
                 <div id="modalPropertyAddress" style="margin-bottom: 15px; font-weight: bold; color: #333;"></div>
+                <label for="modalNoteAuthorInput" class="visually-hidden">Your name</label>
                 <input type="text" id="modalNoteAuthorInput" placeholder="Your name" style="width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;" />
+                <label for="modalNoteTextInput" class="visually-hidden">Your note</label>
                 <textarea id="modalNoteTextInput" placeholder="Enter your note on doorknocking/licensing etc..." style="width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; min-height: 100px; resize: vertical;"></textarea>
-                <button id="modalSubmitNoteBtn" style="padding: 10px 20px; background: #e63946; color: white; border: none; border-radius: 4px; font-size: 14px; cursor: pointer;">Submit Note</button>
-                <div id="modalNoteFormMessage" style="margin-top: 10px;"></div>
+                <button type="button" id="modalSubmitNoteBtn" style="padding: 10px 20px; background: #e63946; color: white; border: none; border-radius: 4px; font-size: 14px; cursor: pointer;">Submit Note</button>
+                <div id="modalNoteFormMessage" style="margin-top: 10px;" aria-live="polite"></div>
             </div>
         </div>
     </div>
@@ -677,18 +694,9 @@
     <div id="controls">
         <div id="title"><a href="https://github.com/codev/licensemap">License Map</a> - An <a href="https://londonrentersunion.org" target="_blank">LRU</a> project</div>
         <select id="boroughSelector">
-            <option value="brent">Brent</option>
-            <option value="hackney" selected="selected">Hackney</option>
-            <option value="haringey">Haringey</option>
-            <option value="islington">Islington</option>
-            <option value="lambeth">Lambeth</option>
-            <option value="lewisham">Lewisham</option>
-            <option value="newham">Newham</option>
-            <option value="towerhamlets">Tower Hamlets</option>
-            <option value="walthamforest">Waltham Forest</option>
-            <option value="westminster">Westminster</option>
+            <!-- Populated dynamically from BOROUGH_CONFIG -->
         </select>
-        <button id="viewToggle">Switch to List View</button>
+        <button type="button" id="viewToggle">Switch to List View</button>
         <select id="landlordFilter">
             <option value="">&lt;All landlords...&gt;</option>
         </select>
@@ -701,7 +709,7 @@
             <option value="without">Without notes</option>
         </select>
         <input type="text" id="postcodeFilter" placeholder="Postcode">
-        <span id="resultCount"></span>
+        <span id="resultCount" aria-live="polite"></span>
         <div id="mapLicensingInfo"></div>
     </div>
     <div id="map"></div>
@@ -710,21 +718,12 @@
         <div id="listViewHeader">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                 <h2 style="margin: 0; font-size: 18px;">Property List</h2>
-                <button id="listViewMapButton">Switch to Map View</button>
+                <button type="button" id="listViewMapButton">Switch to Map View</button>
             </div>
             <div style="margin-bottom: 10px;">
                 <label for="listViewBoroughSelector" style="margin-right: 5px; font-weight: bold;">Borough:</label>
                 <select id="listViewBoroughSelector" style="padding: 5px; border-radius: 4px; border: 1px solid #ccc; font-size: 13px;">
-                    <option value="brent">Brent</option>
-                    <option value="hackney" selected="selected">Hackney</option>
-                    <option value="haringey">Haringey</option>
-                    <option value="islington">Islington</option>
-                    <option value="lambeth">Lambeth</option>
-                    <option value="lewisham">Lewisham</option>
-                    <option value="newham">Newham</option>
-                    <option value="towerhamlets">Tower Hamlets</option>
-                    <option value="walthamforest">Waltham Forest</option>
-                    <option value="westminster">Westminster</option>
+                    <!-- Populated dynamically from BOROUGH_CONFIG -->
                 </select>
                 <span id="listViewResultCount" style="margin-left: 10px; font-size: 13px; color: #666;"></span>
                 <span id="listViewLicensingInfo" style="margin-left: 10px; font-size: 13px;"></span>
@@ -742,9 +741,9 @@
 
         <div id="mobileCardsContainer">
             <div id="mobileFiltersSection">
-                <button id="mobileFiltersToggle">
+                <button type="button" id="mobileFiltersToggle" aria-expanded="false" aria-controls="mobileFiltersContent">
                     <span>Filters</span>
-                    <span id="mobileFiltersIcon">▼</span>
+                    <span id="mobileFiltersIcon" aria-hidden="true">▼</span>
                 </button>
                 <div id="mobileFiltersContent">
                     <label for="mobileGlobalSearch">Search All Fields:</label>
@@ -762,18 +761,18 @@
                         <option value="no_notes">No notes</option>
                     </select>
 
-                    <button id="mobileClearFilters" style="width: 100%; padding: 6px; background: #666; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; margin-top: 5px;">Clear All Filters</button>
+                    <button type="button" id="mobileClearFilters" style="width: 100%; padding: 6px; background: #666; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; margin-top: 5px;">Clear All Filters</button>
                 </div>
             </div>
 
             <div id="mobileSortSection">
-                <select id="mobileSortColumn">
+                <select id="mobileSortColumn" aria-label="Sort column">
                     <option value="">Sort by...</option>
                 </select>
-                <button id="mobileSortDirection" data-direction="asc">↑ Asc</button>
+                <button type="button" id="mobileSortDirection" data-direction="asc" aria-label="Sort direction">↑ Asc</button>
             </div>
 
-            <div id="mobileResultCount" style="margin-bottom: 10px; font-size: 13px; color: #666;"></div>
+            <div id="mobileResultCount" style="margin-bottom: 10px; font-size: 13px; color: #666;" aria-live="polite"></div>
 
             <div id="mobileCardsContent"></div>
         </div>
@@ -782,7 +781,7 @@
     <div id="notesPanel" class="hidden">
         <h3>
             <span>Property Notes</span>
-            <button class="close-btn" id="closeNotesBtn" title="Close notes panel">&times;</button>
+            <button type="button" class="close-btn" id="closeNotesBtn" title="Close notes panel" aria-label="Close notes panel">&times;</button>
         </h3>
         <div id="notesPanelContent">
             <p class="no-property">Click on a property marker to view and add notes.</p>
@@ -791,8 +790,8 @@
             <h4 style="margin: 0 0 8px 0; font-size: 14px;">Add a Note</h4>
             <input type="text" id="noteAuthorInput" placeholder="Your name" />
             <textarea id="noteTextInput" placeholder="Enter your note on doorknocking/licensing etc..."></textarea>
-            <button id="submitNoteBtn" disabled>Submit Note</button>
-            <div id="noteFormMessage"></div>
+            <button type="button" id="submitNoteBtn" disabled>Submit Note</button>
+            <div id="noteFormMessage" aria-live="polite"></div>
         </div>
     </div>
 
@@ -843,97 +842,145 @@
         let mobileSortCol = '';
         let mobileSortDir = 'asc';
 
-        // Borough licensing register URLs
-        const LICENSING_URLS = {
-            "Hackney": "https://www.hackney.gov.uk/property-licensing",
-            "Haringey": "https://www.haringey.gov.uk/housing/property-licensing",
-            "Barking and Dagenham": "https://www.lbbd.gov.uk/private-sector-housing/licensing",
-            "Croydon": "https://www.croydon.gov.uk/housing/landlords",
-            "Ealing": "https://www.ealing.gov.uk/info/201086/housing_and_council_tax/3306/private_rented_property_licensing",
-            "Enfield": "https://www.enfield.gov.uk/services/housing/private-rented-property-licensing",
-            "Greenwich": "http://www.royalgreenwich.gov.uk/info/200069/multiple_occupancy_homes/937/hmo_licensing",
-            "Havering": "https://www.havering.gov.uk/info/20060/information_for_landlords/336/guidance_on_letting_your_property_to_multiple_residents",
-            "Islington": "https://www.islington.gov.uk/housing/private-sector-housing/landlords/houses-in-multiple-occupation-hmos",
-            "Kensington and Chelsea": "http://www.rbkc.gov.uk/housing/livinginhealthyhomes/housesinmultipleoccupation.aspx",
-            "Lambeth": "https://www.lambeth.gov.uk/housing/landlords-licensing",
-            "Lewisham": "https://lewisham.gov.uk/myservices/housing/private-tenants-and-landlords/landlords",
-            "Southwark": "https://www.southwark.gov.uk/housing/private-tenants-and-landlords/private-rented-property-licensing",
-            "Waltham Forest": "https://www.walthamforest.gov.uk/service-categories/private-landlords",
-            "Westminster": "https://www.westminster.gov.uk/housing/private-sector-housing",
-            "Newham": "http://www.newham.gov.uk/Pages/Services/Private-rented-property-licensing.aspx",
-            "Tower Hamlets": "https://www.towerhamlets.gov.uk/lgnl/housing/Private-tenants-landlords-and-homeowners/Private-Landlords/Landlord_Licensing_Schemes.aspx",
-            "Brent": "https://www.brent.gov.uk/housing/landlords/property-licensing#findoutifyouneedalicence",
-            "Redbridge": "https://www.redbridge.gov.uk/housing/private-rentals/",
+        // Unified borough configuration - single source of truth
+        const BOROUGH_CONFIG = {
+            brent: {
+                displayName: 'Brent',
+                licensingUrl: 'https://www.brent.gov.uk/housing/landlords/property-licensing#findoutifyouneedalicence',
+                registerUrl: 'https://www.brent.gov.uk/-/media/files/resident-documents/housing-documents/online-register-of-licenced-properties.pdf?',
+                email: 'prslicensing@brent.gov.uk'
+            },
+            hackney: {
+                displayName: 'Hackney',
+                licensingUrl: 'https://www.hackney.gov.uk/property-licensing',
+                registerUrl: 'https://propertylicensing.hackney.gov.uk/public-register',
+                email: 'property.licensing@hackney.gov.uk'
+            },
+            haringey: {
+                displayName: 'Haringey',
+                licensingUrl: 'https://www.haringey.gov.uk/housing/property-licensing',
+                registerUrl: 'https://propertylicensing.haringey.gov.uk/public-register',
+                email: 'propertylicensing@haringey.gov.uk'
+            },
+            islington: {
+                displayName: 'Islington',
+                licensingUrl: 'https://www.islington.gov.uk/housing/private-sector-housing/landlords/houses-in-multiple-occupation-hmos',
+                registerUrl: 'https://propertylicensing.islington.gov.uk/public-register',
+                email: 'property.licensing@islington.gov.uk'
+            },
+            lambeth: {
+                displayName: 'Lambeth',
+                licensingUrl: 'https://www.lambeth.gov.uk/housing/landlords-licensing',
+                registerUrl: 'https://hmolicensing.lambeth.gov.uk/public-register',
+                email: 'prslicensing@lambeth.gov.uk'
+            },
+            lewisham: {
+                displayName: 'Lewisham',
+                licensingUrl: 'https://lewisham.gov.uk/myservices/housing/private-tenants-and-landlords/landlords',
+                registerUrl: 'https://lewisham.metastreet.co.uk/public-register',
+                email: 'pshe@lewisham.gov.uk'
+            },
+            newham: {
+                displayName: 'Newham',
+                licensingUrl: 'http://www.newham.gov.uk/Pages/Services/Private-rented-property-licensing.aspx',
+                registerUrl: 'https://www.newham.gov.uk/landlords-newham/rented-property-licensing/6',
+                email: 'propertylicensing@newham.gov.uk'
+            },
+            towerhamlets: {
+                displayName: 'Tower Hamlets',
+                licensingUrl: 'https://www.towerhamlets.gov.uk/lgnl/housing/Private-tenants-landlords-and-homeowners/Private-Landlords/Landlord_Licensing_Schemes.aspx',
+                registerUrl: 'https://www.towerhamlets.gov.uk/lgnl/housing/Private-tenants-landlords-and-homeowners/Private-Landlords/Private-landlords.aspx',
+                email: 'housinglicensing@towerhamlets.gov.uk'
+            },
+            walthamforest: {
+                displayName: 'Waltham Forest',
+                licensingUrl: 'https://www.walthamforest.gov.uk/service-categories/private-landlords',
+                registerUrl: 'https://propertylicensing.walthamforest.gov.uk/public-register',
+                email: 'propertylicensing@walthamforest.gov.uk'
+            },
+            westminster: {
+                displayName: 'Westminster',
+                licensingUrl: 'https://www.westminster.gov.uk/housing/private-sector-housing',
+                registerUrl: 'https://westminster.metastreet.co.uk/public-register',
+                email: 'HMO@westminster.gov.uk'
+            }
         };
-      const LICENSING_EMAILS = {
-            "Hackney": "property.licensing@hackney.gov.uk",
-            "Haringey": "propertylicensing@haringey.gov.uk",
-            "Barking and Dagenham": "PRPL@lbbd.gov.uk",
-            "Croydon": "hmo@croydon.gov.uk",
-            "Ealing": "prslicensing@ealing.gov.uk",
-            "Enfield": "prsh@enfield.gov.uk",
-            "Greenwich": "private-rented-property-licensing@royalgreenwich.gov.uk",
-            "Havering": "landlordlicensing@havering.gov.uk",
-            "Islington": "property.licensing@islington.gov.uk",
-            "Kensington and Chelsea": "hmolicensing@rbkc.gov.uk",
-            "Lambeth": "prslicensing@lambeth.gov.uk",
-            "Lewisham": "pshe@lewisham.gov.uk",
-            "Southwark": "resi@southwark.gov.uk",
-            "Waltham Forest": "propertylicensing@walthamforest.gov.uk",
-            "Westminster": "HMO@westminster.gov.uk ",
-            "Newham": "propertylicensing@newham.gov.uk",
-            "Tower Hamlets": "housinglicensing@towerhamlets.gov.uk",
-            "Brent": "prslicensing@brent.gov.uk",
-            "Redbridge": "prslicensing@redbridge.gov.uk",
-        };
-      const OTHER_LICENSE_DETAILS = {
-            "Hackney": "",
-            "Haringey": "",
-            "Barking and Dagenham": "",
-            "Croydon": "",
-            "Ealing": "",
-            "Enfield": "",
-            "Greenwich": "",
-            "Havering": "",
-            "Islington": "",
-            "Kensington and Chelsea": "",
-            "Lambeth": "",
-            "Lewisham": "",
-            "Southwark": "",
-            "Waltham Forest": "",
-            "Westminster": "",
-            "Newham": "",
-            "Tower Hamlets": "",
-            "Brent": "",
-            "Redbridge": "",
-        };
-      const REGISTER_URLS = {
-            "Hackney": "https://propertylicensing.hackney.gov.uk/public-register",
-            "Haringey": "https://propertylicensing.haringey.gov.uk/public-register",
-            "Barking and Dagenham": "https://lbbd.metastreet.co.uk/public-register",
-            "Croydon": "https://landlordlicensing.croydon.gov.uk/public-register",
-            "Ealing": "https://ealing.metastreet.co.uk/public-register",
-            "Enfield": "https://enfield.metastreet.co.uk/public-register",
-            "Greenwich": "https://greenwich.metastreet.co.uk/public-register",
-            "Havering": "https://housingpropertylicence.havering.gov.uk/public-register",
-            "Islington": "https://propertylicensing.islington.gov.uk/public-register",
-            "Kensington and Chelsea": "https://rbkc.metastreet.co.uk/public-register",
-            "Lambeth": "https://hmolicensing.lambeth.gov.uk/public-register",
-            "Lewisham": "https://lewisham.metastreet.co.uk/public-register",
-            "Southwark": "https://southwark.metastreet.co.uk/public-register",
-            "Waltham Forest": "https://propertylicensing.walthamforest.gov.uk/public-register",
-            "Westminster": "https://westminster.metastreet.co.uk/public-register",
-            "Newham": "https://www.newham.gov.uk/landlords-newham/rented-property-licensing/6",
-            "Tower Hamlets": "https://www.towerhamlets.gov.uk/lgnl/housing/Private-tenants-landlords-and-homeowners/Private-Landlords/Private-landlords.aspx",
-            "Brent": "https://www.brent.gov.uk/-/media/files/resident-documents/housing-documents/online-register-of-licenced-properties.pdf?",
-            "Redbridge": "https://propertylicensing.redbridge.gov.uk/online-application/public-register/",
-        };
+
+        // Helper: Columns to exclude from display
+        const EXCLUDED_COLUMNS = new Set(['latitude', 'longitude', 'lat', 'lng', 'lon', 'borough']);
+        function isDisplayableColumn(key) {
+            return !key.startsWith('_') && !EXCLUDED_COLUMNS.has(key.toLowerCase());
+        }
+
+        // Helper: Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            if (text === null || text === undefined) return '';
+            const div = document.createElement('div');
+            div.textContent = String(text);
+            return div.innerHTML;
+        }
+
+        // Helper: Format property data for clipboard
+        function formatPropertyForClipboard(rowData) {
+            const clipboardLines = [];
+            Object.keys(rowData).forEach(key => {
+                if (isDisplayableColumn(key)) {
+                    const value = rowData[key];
+                    if (value !== null && value !== undefined && value !== '') {
+                        clipboardLines.push(`${key}: ${value}`);
+                    }
+                }
+            });
+
+            const address = rowData.Address || rowData.address;
+            const notes = getNotesForAddress(address);
+            if (notes.length > 0) {
+                clipboardLines.push('');
+                clipboardLines.push('Notes:');
+                notes.forEach(note => {
+                    clipboardLines.push(`  - ${note.name} (${new Date(note.timestamp).toLocaleString()}): ${note.note}`);
+                });
+            }
+
+            return clipboardLines.join('\n');
+        }
+
+        // Helper: Copy to clipboard and show notification
+        function copyToClipboardWithNotification(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                console.log('Property details copied to clipboard');
+                const notification = document.getElementById('copyNotification');
+                notification.classList.add('show');
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy to clipboard:', err);
+            });
+        }
+
+        // Helper: Populate borough dropdowns from config
+        function populateBoroughDropdowns() {
+            const dropdowns = ['boroughSelector', 'listViewBoroughSelector'];
+            dropdowns.forEach(id => {
+                const select = document.getElementById(id);
+                if (!select) return;
+                select.innerHTML = '';
+                Object.entries(BOROUGH_CONFIG).forEach(([key, config]) => {
+                    const option = document.createElement('option');
+                    option.value = key;
+                    option.textContent = config.displayName;
+                    if (key === 'hackney') option.selected = true;
+                    select.appendChild(option);
+                });
+            });
+        }
         
-        // Add jitter to coordinates
+        // Add jitter to coordinates (disabled)
         function addJitter(value) {
-            return value;
             // 2025-11-06 disable jitter
             //return value + (Math.random() - 0.5) * 0.0009;
+            return value;
         }
         
         // Load notes from Google Sheets
@@ -983,7 +1030,7 @@
             return notesData[address] || [];
         }
 
-        // Open notes panel for a specific property (called from popup button)
+        // Open notes panel for a specific property
         function openNotesForProperty(address) {
             // Find the property data by address
             const property = allData.find(row => (row.Address || row.address) === address);
@@ -993,6 +1040,13 @@
                 updateNotesPanel();
             }
         }
+
+        // Event delegation for View Notes buttons in popups
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('view-notes-btn') && e.target.dataset.address) {
+                openNotesForProperty(e.target.dataset.address);
+            }
+        });
 
         // Update the notes panel display
         function updateNotesPanel() {
@@ -1009,16 +1063,16 @@
             const notes = getNotesForAddress(address);
 
             if (notes.length === 0) {
-                contentDiv.innerHTML = `<p class="no-property">No notes yet for this property.</p>`;
+                contentDiv.innerHTML = '<p class="no-property">No notes yet for this property.</p>';
             } else {
                 let html = '';
                 notes.forEach(note => {
                     const timestamp = new Date(note.timestamp).toLocaleString();
                     html += `
                         <div class="note-item">
-                            <div class="note-author">${note.name}</div>
-                            <div class="note-text">${note.note}</div>
-                            <div class="note-time">${timestamp}</div>
+                            <div class="note-author">${escapeHtml(note.name)}</div>
+                            <div class="note-text">${escapeHtml(note.note)}</div>
+                            <div class="note-time">${escapeHtml(timestamp)}</div>
                         </div>
                     `;
                 });
@@ -1028,47 +1082,31 @@
             submitBtn.disabled = false;
         }
 
-        // Update map licensing info in control panel
-        function updateMapLicensingInfo(boroughKey) {
-            // Convert borough key to proper borough name
-            const boroughNames = {
-                'brent': 'Brent',
-                'hackney': 'Hackney',
-                'haringey': 'Haringey',
-                'islington': 'Islington',
-                'lambeth': 'Lambeth',
-                'lewisham': 'Lewisham',
-                'newham': 'Newham',
-                'towerhamlets': 'Tower Hamlets',
-                'walthamforest': 'Waltham Forest',
-                'westminster': 'Westminster'
-            };
+        // Update licensing info in any target element
+        function updateLicensingInfo(boroughKey, targetElementId) {
+            const config = BOROUGH_CONFIG[boroughKey];
+            if (!config) return;
 
-            const boroughName = boroughNames[boroughKey] || boroughKey;
-            const licensingUrl = LICENSING_URLS[boroughName];
-            const registerUrl = REGISTER_URLS[boroughName];
-            const email = LICENSING_EMAILS[boroughName];
-
-            let html = '<strong>' + boroughName + ':</strong> ';
+            let html = '<strong>' + escapeHtml(config.displayName) + ':</strong> ';
             const links = [];
 
-            if (licensingUrl) {
-                links.push('<a href="' + licensingUrl + '" target="_blank">Council website</a>');
+            if (config.licensingUrl) {
+                links.push('<a href="' + escapeHtml(config.licensingUrl) + '" target="_blank" style="color: #e63946; text-decoration: none;">Council website</a>');
             }
 
-            if (registerUrl) {
-                links.push('<a href="' + registerUrl + '" target="_blank">Public register</a>');
+            if (config.registerUrl) {
+                links.push('<a href="' + escapeHtml(config.registerUrl) + '" target="_blank" style="color: #e63946; text-decoration: none;">Public register</a>');
             }
 
             html += links.join(' - ');
 
-            if (email) {
-                html += ' - <span>Email:</span> <span style="overflow-wrap: break-word; word-wrap: break-word;">' + email + '</span>';
+            if (config.email) {
+                html += ' - <span>Email:</span> <span style="overflow-wrap: break-word; word-wrap: break-word;">' + escapeHtml(config.email) + '</span>';
             }
 
-            const mapInfo = document.getElementById('mapLicensingInfo');
-            if (mapInfo) {
-                mapInfo.innerHTML = html;
+            const targetElement = document.getElementById(targetElementId);
+            if (targetElement) {
+                targetElement.innerHTML = html;
             }
         }
 
@@ -1115,8 +1153,8 @@
 
                     let popupContent = '<div style="max-width: 250px;">';
                     Object.keys(row).forEach(key => {
-                        if (key.toLowerCase() !== 'borough' && key.toLowerCase() !== 'latitude' && key.toLowerCase() !== 'longitude' && !key.startsWith('_') && row[key]) {
-                            popupContent += `<strong>${key}:</strong> ${row[key]}<br>`;
+                        if (isDisplayableColumn(key) && row[key]) {
+                            popupContent += `<strong>${escapeHtml(key)}:</strong> ${escapeHtml(row[key])}<br>`;
                         }
                     });
 
@@ -1125,8 +1163,8 @@
                         popupContent += `<br><strong style="color: #e63946;">${noteCount} note${noteCount !== 1 ? 's' : ''}</strong>`;
                     }
 
-                    // Add "View Notes" button
-                    popupContent += `<br><button class="view-notes-btn" onclick="openNotesForProperty('${address.replace(/'/g, "\\'")}')">View Notes</button>`;
+                    // Add "View Notes" button with data attribute (avoids XSS via onclick)
+                    popupContent += `<br><button class="view-notes-btn" data-address="${escapeHtml(address)}">View Notes</button>`;
 
                     popupContent += '</div>';
 
@@ -1327,7 +1365,7 @@
 
                     // Also render table/cards if in list view
                     if (currentView === 'list') {
-                        updateLicensingInfo(borough);
+                        updateLicensingInfo(borough, 'listViewLicensingInfo');
                         renderTable();
                         renderMobileCards();
                     }
@@ -1381,30 +1419,15 @@
             // Sync with list view borough selector
             document.getElementById('listViewBoroughSelector').value = selectedBorough;
             // Update map licensing info
-            updateMapLicensingInfo(selectedBorough);
+            updateLicensingInfo(selectedBorough, 'mapLicensingInfo');
             loadBorough(selectedBorough);
         });
 
         // Load default borough (Hackney) on page load
-        // Reset the dropdown to Hackney to prevent browser form persistence from showing wrong borough
-        document.getElementById('boroughSelector').value = 'hackney';
-        updateMapLicensingInfo('hackney');
+        // Populate dropdowns from config
+        populateBoroughDropdowns();
+        updateLicensingInfo('hackney', 'mapLicensingInfo');
         loadBorough('hackney', true); // true = isInitialLoad, wait for notes and show loading for min 6 seconds
-
-        // Auto-refresh notes every 2 minutes when page is visible
-        // 2025-11-21 Disabled by Marc, refresh page to get new notes
-        // function setupNotesAutoRefresh() {
-        //     setInterval(() => {
-        //         // Only refresh if page is visible
-        //         if (!document.hidden) {
-        //             loadNotes();
-        //         }
-        //     }, 120000); // 2 minutes (120 seconds)
-        // }
-
-        // Start auto-refresh after initial load
-        // 2025-11-21 Disabled by Marc, refresh page to get new notes
-        // setupNotesAutoRefresh();
 
         // Close button functionality
         document.getElementById('closeNotesBtn').addEventListener('click', function() {
@@ -1490,52 +1513,6 @@
 
         // ==================== LIST VIEW FUNCTIONALITY ====================
 
-        // Update licensing info display
-        function updateLicensingInfo(boroughKey) {
-            // Convert borough key to proper borough name
-            const boroughNames = {
-                'brent': 'Brent',
-                'hackney': 'Hackney',
-                'haringey': 'Haringey',
-                'islington': 'Islington',
-                'lambeth': 'Lambeth',
-                'lewisham': 'Lewisham',
-                'newham': 'Newham',
-                'towerhamlets': 'Tower Hamlets',
-                'walthamforest': 'Waltham Forest',
-                'westminster': 'Westminster'
-            };
-
-            const boroughName = boroughNames[boroughKey] || boroughKey;
-            const licensingUrl = LICENSING_URLS[boroughName];
-            const registerUrl = REGISTER_URLS[boroughName];
-            const email = LICENSING_EMAILS[boroughName];
-
-            let html = '<strong>' + boroughName + ':</strong> ';
-            const links = [];
-
-            if (licensingUrl) {
-                links.push('<a href="' + licensingUrl + '" target="_blank" style="color: #e63946; text-decoration: none;">Council website</a>');
-            }
-
-            if (registerUrl) {
-                links.push('<a href="' + registerUrl + '" target="_blank" style="color: #e63946; text-decoration: none;">Public register</a>');
-            }
-
-            html += links.join(' - ');
-
-            if (email) {
-                html += ' - <span>Email:</span> <span style="overflow-wrap: break-word; word-wrap: break-word;">' + email + '</span>';
-            }
-
-            // Update desktop info (visible on both desktop and mobile)
-            const desktopInfo = document.getElementById('listViewLicensingInfo');
-
-            if (desktopInfo) {
-                desktopInfo.innerHTML = html;
-            }
-        }
-
         // View toggle functionality
         function switchToListView() {
             currentView = 'list';
@@ -1549,7 +1526,7 @@
             document.getElementById('listViewBoroughSelector').value = mapBorough;
 
             // Update licensing info
-            updateLicensingInfo(mapBorough);
+            updateLicensingInfo(mapBorough, 'listViewLicensingInfo');
 
             // Render table for desktop, cards for mobile
             renderTable();
@@ -1583,7 +1560,7 @@
             // Sync with map borough selector
             document.getElementById('boroughSelector').value = selectedBorough;
             // Update licensing info
-            updateLicensingInfo(selectedBorough);
+            updateLicensingInfo(selectedBorough, 'listViewLicensingInfo');
             loadBorough(selectedBorough);
         });
 
@@ -1596,15 +1573,7 @@
 
             // Determine columns from first row, excluding internal ones and Borough
             const firstRow = allData[0];
-            tableColumns = Object.keys(firstRow).filter(key =>
-                !key.startsWith('_') &&
-                key.toLowerCase() !== 'latitude' &&
-                key.toLowerCase() !== 'longitude' &&
-                key.toLowerCase() !== 'lat' &&
-                key.toLowerCase() !== 'lng' &&
-                key.toLowerCase() !== 'lon' &&
-                key.toLowerCase() !== 'borough'
-            );
+            tableColumns = Object.keys(firstRow).filter(isDisplayableColumn);
 
             // Add Notes column at the end
             tableColumns.push('Notes');
@@ -1869,53 +1838,7 @@
 
             // Copy row data to clipboard
             if (rowData) {
-                // Build clipboard text with all data (excluding internal fields)
-                const clipboardLines = [];
-
-                Object.keys(rowData).forEach(key => {
-                    // Skip internal fields
-                    if (!key.startsWith('_') &&
-                        key.toLowerCase() !== 'latitude' &&
-                        key.toLowerCase() !== 'longitude' &&
-                        key.toLowerCase() !== 'lat' &&
-                        key.toLowerCase() !== 'lng' &&
-                        key.toLowerCase() !== 'lon') {
-
-                        const value = rowData[key];
-                        if (value !== null && value !== undefined && value !== '') {
-                            clipboardLines.push(`${key}: ${value}`);
-                        }
-                    }
-                });
-
-                // Add notes if available
-                const address = rowData.Address || rowData.address;
-                const notes = getNotesForAddress(address);
-                if (notes.length > 0) {
-                    clipboardLines.push(''); // Empty line separator
-                    clipboardLines.push('Notes:');
-                    notes.forEach(note => {
-                        clipboardLines.push(`  - ${note.name} (${new Date(note.timestamp).toLocaleString()}): ${note.note}`);
-                    });
-                }
-
-                const clipboardText = clipboardLines.join('\n');
-
-                // Copy to clipboard
-                navigator.clipboard.writeText(clipboardText).then(() => {
-                    console.log('Property details copied to clipboard');
-
-                    // Show notification
-                    const notification = document.getElementById('copyNotification');
-                    notification.classList.add('show');
-
-                    // Hide after 2 seconds
-                    setTimeout(() => {
-                        notification.classList.remove('show');
-                    }, 2000);
-                }).catch(err => {
-                    console.error('Failed to copy to clipboard:', err);
-                });
+                copyToClipboardWithNotification(formatPropertyForClipboard(rowData));
             }
         }
 
@@ -1939,15 +1862,7 @@
 
             if (mobileSortSelect.options.length === 1) { // Only has "Sort by..."
                 const firstRow = allData[0];
-                const columns = Object.keys(firstRow).filter(key =>
-                    !key.startsWith('_') &&
-                    key.toLowerCase() !== 'latitude' &&
-                    key.toLowerCase() !== 'longitude' &&
-                    key.toLowerCase() !== 'lat' &&
-                    key.toLowerCase() !== 'lng' &&
-                    key.toLowerCase() !== 'lon' &&
-                    key.toLowerCase() !== 'borough'
-                );
+                const columns = Object.keys(firstRow).filter(isDisplayableColumn);
 
                 // Populate sort dropdown
                 columns.forEach(col => {
@@ -2073,15 +1988,7 @@
                 // Add all fields and track the last one
                 let lastFieldDiv = null;
                 for (let key in row) {
-                    if (!key.startsWith('_') &&
-                        key.toLowerCase() !== 'latitude' &&
-                        key.toLowerCase() !== 'longitude' &&
-                        key.toLowerCase() !== 'lat' &&
-                        key.toLowerCase() !== 'lng' &&
-                        key.toLowerCase() !== 'lon' &&
-                        key.toLowerCase() !== 'borough' &&
-                        row[key]) {
-
+                    if (isDisplayableColumn(key) && row[key]) {
                         const fieldDiv = document.createElement('div');
                         fieldDiv.className = 'property-card-field';
 
@@ -2212,49 +2119,9 @@
             // Add selection to clicked card
             card.classList.add('selected');
 
-            // Copy to clipboard (reuse same logic as table)
+            // Copy to clipboard
             if (rowData) {
-                const clipboardLines = [];
-
-                Object.keys(rowData).forEach(key => {
-                    if (!key.startsWith('_') &&
-                        key.toLowerCase() !== 'latitude' &&
-                        key.toLowerCase() !== 'longitude' &&
-                        key.toLowerCase() !== 'lat' &&
-                        key.toLowerCase() !== 'lng' &&
-                        key.toLowerCase() !== 'lon') {
-
-                        const value = rowData[key];
-                        if (value !== null && value !== undefined && value !== '') {
-                            clipboardLines.push(`${key}: ${value}`);
-                        }
-                    }
-                });
-
-                const address = rowData.Address || rowData.address;
-                const notes = getNotesForAddress(address);
-                if (notes.length > 0) {
-                    clipboardLines.push('');
-                    clipboardLines.push('Notes:');
-                    notes.forEach(note => {
-                        clipboardLines.push(`  - ${note.name} (${new Date(note.timestamp).toLocaleString()}): ${note.note}`);
-                    });
-                }
-
-                const clipboardText = clipboardLines.join('\n');
-
-                navigator.clipboard.writeText(clipboardText).then(() => {
-                    console.log('Property details copied to clipboard');
-
-                    const notification = document.getElementById('copyNotification');
-                    notification.classList.add('show');
-
-                    setTimeout(() => {
-                        notification.classList.remove('show');
-                    }, 2000);
-                }).catch(err => {
-                    console.error('Failed to copy to clipboard:', err);
-                });
+                copyToClipboardWithNotification(formatPropertyForClipboard(rowData));
             }
         }
 
@@ -2384,8 +2251,9 @@
         document.getElementById('mobileFiltersToggle').addEventListener('click', function() {
             const content = document.getElementById('mobileFiltersContent');
             const icon = document.getElementById('mobileFiltersIcon');
-            content.classList.toggle('show');
-            icon.textContent = content.classList.contains('show') ? '▲' : '▼';
+            const isExpanded = content.classList.toggle('show');
+            icon.textContent = isExpanded ? '▲' : '▼';
+            this.setAttribute('aria-expanded', isExpanded);
         });
 
         // Mobile global search
