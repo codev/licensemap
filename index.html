@@ -768,6 +768,11 @@
                 </thead>
                 <tbody id="tableBody"></tbody>
             </table>
+            <div id="paginationControls" style="padding: 10px; display: flex; justify-content: center; align-items: center; gap: 10px; border-top: 1px solid #ddd; background: #f9f9f9;">
+                <button type="button" id="prevPageBtn" style="padding: 6px 12px; border-radius: 4px; border: 2px solid #e63946; background: #fff; color: #111; font-size: 13px; cursor: pointer;">← Previous</button>
+                <span id="pageInfo" style="font-size: 13px; color: #666;">Page 1 of 1</span>
+                <button type="button" id="nextPageBtn" style="padding: 6px 12px; border-radius: 4px; border: 2px solid #e63946; background: #fff; color: #111; font-size: 13px; cursor: pointer;">Next →</button>
+            </div>
         </div>
 
         <div id="mobileCardsContainer">
@@ -804,6 +809,12 @@
             </div>
 
             <div id="mobileResultCount" style="margin-bottom: 10px; font-size: 13px; color: #666;" aria-live="polite"></div>
+
+            <div id="mobilePaginationControls" style="padding: 10px; display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 10px;">
+                <button type="button" id="mobilePrevPageBtn" style="padding: 6px 12px; border-radius: 4px; border: 2px solid #e63946; background: #fff; color: #111; font-size: 13px; cursor: pointer;">← Prev</button>
+                <span id="mobilePageInfo" style="font-size: 13px; color: #666;">Page 1 of 1</span>
+                <button type="button" id="mobileNextPageBtn" style="padding: 6px 12px; border-radius: 4px; border: 2px solid #e63946; background: #fff; color: #111; font-size: 13px; cursor: pointer;">Next →</button>
+            </div>
 
             <div id="mobileCardsContent"></div>
         </div>
@@ -873,6 +884,11 @@
         let mobileNotesFilter = '';
         let mobileSortCol = '';
         let mobileSortDir = 'asc';
+
+        // Pagination variables
+        let currentPage = 1;
+        const PAGE_SIZE = 50;
+        let lastFilteredData = []; // Cache filtered/sorted data for pagination
 
         // Unified borough configuration - single source of truth
         // Keys match the borough names in the GeoJSON data (lowercase, spaces removed)
@@ -1698,6 +1714,7 @@
         // View toggle functionality
         function switchToListView() {
             currentView = 'list';
+            currentPage = 1; // Reset pagination when switching views
             document.getElementById('map').classList.add('hidden');
             document.getElementById('controls').classList.add('hidden');
             document.getElementById('listViewContainer').classList.remove('hidden');
@@ -1710,9 +1727,12 @@
             // Update licensing info
             updateLicensingInfo(mapBorough, 'listViewLicensingInfo');
 
-            // Render table for desktop, cards for mobile
-            renderTable();
-            renderMobileCards();
+            // Only render the active view based on screen size
+            if (isMobileView()) {
+                renderMobileCards();
+            } else {
+                renderTable();
+            }
         }
 
         function switchToMapView() {
@@ -1743,6 +1763,7 @@
             document.getElementById('boroughSelector').value = selectedBorough;
             // Update licensing info
             updateLicensingInfo(selectedBorough, 'listViewLicensingInfo');
+            currentPage = 1; // Reset to first page on borough change
             loadBorough(selectedBorough);
         });
 
@@ -1801,6 +1822,7 @@
                     `;
                     select.addEventListener('change', (e) => {
                         tableFilters[column] = e.target.value;
+                        currentPage = 1; // Reset to first page on filter change
                         filterAndRenderTableRows();
                     });
                     th.appendChild(select);
@@ -1812,6 +1834,7 @@
                     input.dataset.column = column;
                     input.addEventListener('input', debounce((e) => {
                         tableFilters[column] = e.target.value.toLowerCase();
+                        currentPage = 1; // Reset to first page on filter change
                         filterAndRenderTableRows();
                     }, 300));
                     th.appendChild(input);
@@ -1830,7 +1853,7 @@
             tbody.innerHTML = '';
 
             // Apply filters
-            let filteredData = allData.filter(row => {
+            lastFilteredData = allData.filter(row => {
                 for (let column in tableFilters) {
                     const filterValue = tableFilters[column];
 
@@ -1863,7 +1886,7 @@
 
             // Apply sorting
             if (tableSortColumn) {
-                filteredData.sort((a, b) => {
+                lastFilteredData.sort((a, b) => {
                     // Special handling for Notes column - sort by number of notes
                     if (tableSortColumn === 'Notes') {
                         const aAddress = a.Address || a.address;
@@ -1892,10 +1915,20 @@
                 });
             }
 
-            // Render rows
-            filteredData.forEach((row, index) => {
+            // Pagination: calculate slice for current page
+            const totalPages = Math.max(1, Math.ceil(lastFilteredData.length / PAGE_SIZE));
+            if (currentPage > totalPages) currentPage = totalPages;
+            const startIndex = (currentPage - 1) * PAGE_SIZE;
+            const endIndex = Math.min(startIndex + PAGE_SIZE, lastFilteredData.length);
+            const pageData = lastFilteredData.slice(startIndex, endIndex);
+
+            // Use DocumentFragment for efficient DOM insertion
+            const fragment = document.createDocumentFragment();
+
+            // Render rows for current page only
+            pageData.forEach((row, index) => {
                 const tr = document.createElement('tr');
-                tr.dataset.rowIndex = index;
+                tr.dataset.rowIndex = startIndex + index;
 
                 // Store row data for clipboard copy
                 tr.rowData = row;
@@ -1973,16 +2006,31 @@
                     tr.appendChild(td);
                 });
 
-                tbody.appendChild(tr);
+                fragment.appendChild(tr);
             });
+
+            tbody.appendChild(fragment);
+
+            // Update pagination controls
+            const prevBtn = document.getElementById('prevPageBtn');
+            const nextBtn = document.getElementById('nextPageBtn');
+            const pageInfo = document.getElementById('pageInfo');
+
+            prevBtn.disabled = currentPage <= 1;
+            nextBtn.disabled = currentPage >= totalPages;
+            prevBtn.style.opacity = currentPage <= 1 ? '0.5' : '1';
+            nextBtn.style.opacity = currentPage >= totalPages ? '0.5' : '1';
+            pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
 
             // Update result count
             const resultCountElement = document.getElementById('listViewResultCount');
             const hasFilters = Object.values(tableFilters).some(v => v !== '');
-            if (hasFilters) {
-                resultCountElement.textContent = `${filteredData.length} of ${allData.length} properties`;
+            if (lastFilteredData.length === 0) {
+                resultCountElement.textContent = 'No properties found';
+            } else if (hasFilters || lastFilteredData.length !== allData.length) {
+                resultCountElement.textContent = `Showing ${startIndex + 1}-${endIndex} of ${lastFilteredData.length} properties`;
             } else {
-                resultCountElement.textContent = `${allData.length} properties`;
+                resultCountElement.textContent = `Showing ${startIndex + 1}-${endIndex} of ${allData.length} properties`;
             }
         }
 
@@ -2070,6 +2118,7 @@
                     input.addEventListener('input', debounce(function(e) {
                         const column = e.target.dataset.column;
                         mobileColumnFilters[column] = e.target.value.toLowerCase();
+                        currentPage = 1; // Reset to first page on filter change
                         filterAndRenderMobileCards();
                     }, 300));
 
@@ -2088,7 +2137,7 @@
             cardsContent.innerHTML = '';
 
             // Apply filters
-            let filteredData = allData.filter(row => {
+            lastFilteredData = allData.filter(row => {
                 // Global search filter
                 if (mobileGlobalFilter) {
                     let found = false;
@@ -2132,7 +2181,7 @@
 
             // Apply sorting
             if (mobileSortCol) {
-                filteredData.sort((a, b) => {
+                lastFilteredData.sort((a, b) => {
                     if (mobileSortCol === 'Notes') {
                         const aAddress = a.Address || a.address;
                         const bAddress = b.Address || b.address;
@@ -2158,8 +2207,18 @@
                 });
             }
 
-            // Render cards
-            filteredData.forEach(row => {
+            // Pagination: calculate slice for current page
+            const totalPages = Math.max(1, Math.ceil(lastFilteredData.length / PAGE_SIZE));
+            if (currentPage > totalPages) currentPage = totalPages;
+            const startIndex = (currentPage - 1) * PAGE_SIZE;
+            const endIndex = Math.min(startIndex + PAGE_SIZE, lastFilteredData.length);
+            const pageData = lastFilteredData.slice(startIndex, endIndex);
+
+            // Use DocumentFragment for efficient DOM insertion
+            const fragment = document.createDocumentFragment();
+
+            // Render cards for current page only
+            pageData.forEach(row => {
                 const card = document.createElement('div');
                 card.className = 'property-card';
                 card.rowData = row;
@@ -2278,16 +2337,31 @@
                     lastFieldDiv.appendChild(addNoteBtn);
                 }
 
-                cardsContent.appendChild(card);
+                fragment.appendChild(card);
             });
+
+            cardsContent.appendChild(fragment);
+
+            // Update mobile pagination controls
+            const prevBtn = document.getElementById('mobilePrevPageBtn');
+            const nextBtn = document.getElementById('mobileNextPageBtn');
+            const pageInfo = document.getElementById('mobilePageInfo');
+
+            prevBtn.disabled = currentPage <= 1;
+            nextBtn.disabled = currentPage >= totalPages;
+            prevBtn.style.opacity = currentPage <= 1 ? '0.5' : '1';
+            nextBtn.style.opacity = currentPage >= totalPages ? '0.5' : '1';
+            pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
 
             // Update result count
             const resultCountElement = document.getElementById('mobileResultCount');
             const hasFilters = mobileGlobalFilter || mobileNotesFilter || Object.values(mobileColumnFilters).some(v => v !== '');
-            if (hasFilters) {
-                resultCountElement.textContent = `${filteredData.length} of ${allData.length} properties`;
+            if (lastFilteredData.length === 0) {
+                resultCountElement.textContent = 'No properties found';
+            } else if (hasFilters || lastFilteredData.length !== allData.length) {
+                resultCountElement.textContent = `Showing ${startIndex + 1}-${endIndex} of ${lastFilteredData.length} properties`;
             } else {
-                resultCountElement.textContent = `${allData.length} properties`;
+                resultCountElement.textContent = `Showing ${startIndex + 1}-${endIndex} of ${allData.length} properties`;
             }
         }
 
@@ -2441,12 +2515,14 @@
         // Mobile global search
         document.getElementById('mobileGlobalSearch').addEventListener('input', debounce(function(e) {
             mobileGlobalFilter = e.target.value.toLowerCase();
+            currentPage = 1; // Reset to first page on filter change
             filterAndRenderMobileCards();
         }, 300));
 
         // Mobile notes filter
         document.getElementById('mobileNotesFilter').addEventListener('change', function(e) {
             mobileNotesFilter = e.target.value;
+            currentPage = 1; // Reset to first page on filter change
             filterAndRenderMobileCards();
         });
 
@@ -2463,6 +2539,7 @@
                 input.value = '';
             });
 
+            currentPage = 1; // Reset to first page on filter change
             filterAndRenderMobileCards();
         });
 
@@ -2480,6 +2557,60 @@
                 filterAndRenderMobileCards();
             }
         });
+
+        // ==================== PAGINATION EVENT HANDLERS ====================
+
+        // Helper function to render current page (handles both views)
+        function renderCurrentPage() {
+            if (isMobileView()) {
+                filterAndRenderMobileCards();
+            } else {
+                filterAndRenderTableRows();
+            }
+        }
+
+        // Desktop pagination - Previous button
+        document.getElementById('prevPageBtn').addEventListener('click', function() {
+            if (currentPage > 1) {
+                currentPage--;
+                renderCurrentPage();
+            }
+        });
+
+        // Desktop pagination - Next button
+        document.getElementById('nextPageBtn').addEventListener('click', function() {
+            const totalPages = Math.ceil(lastFilteredData.length / PAGE_SIZE);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderCurrentPage();
+            }
+        });
+
+        // Mobile pagination - Previous button
+        document.getElementById('mobilePrevPageBtn').addEventListener('click', function() {
+            if (currentPage > 1) {
+                currentPage--;
+                renderCurrentPage();
+            }
+        });
+
+        // Mobile pagination - Next button
+        document.getElementById('mobileNextPageBtn').addEventListener('click', function() {
+            const totalPages = Math.ceil(lastFilteredData.length / PAGE_SIZE);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderCurrentPage();
+            }
+        });
+
+        // ==================== WINDOW RESIZE HANDLER ====================
+
+        // Handle switching between mobile/desktop when resizing
+        window.addEventListener('resize', debounce(function() {
+            if (currentView === 'list') {
+                renderCurrentPage();
+            }
+        }, 250));
 
     </script>
 </body>
