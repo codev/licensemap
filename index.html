@@ -3,14 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>License Map - A London Renters Union project v1.15</title>
+    <title>License Map - A London Renters Union project v1.16</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slim-select/2.8.2/slimselect.min.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://unpkg.com/supercluster@8.0.1/dist/supercluster.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/slim-select/2.8.2/slimselect.min.js"></script>
     <style>
         *, *::before, *::after {
@@ -657,6 +654,40 @@
             }
         }
 
+        /* Cluster marker styles */
+        .cluster-marker {
+            background: #e63946;
+            border-radius: 50%;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 12px;
+            border: 3px solid white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        .cluster-marker.small {
+            width: 30px;
+            height: 30px;
+            font-size: 11px;
+        }
+        .cluster-marker.medium {
+            width: 40px;
+            height: 40px;
+            font-size: 13px;
+        }
+        .cluster-marker.large {
+            width: 50px;
+            height: 50px;
+            font-size: 14px;
+        }
+        .cluster-marker.xlarge {
+            width: 60px;
+            height: 60px;
+            font-size: 15px;
+        }
+
     </style>
 </head>
 <body>
@@ -818,9 +849,10 @@
             maxZoom: 19
         }).addTo(map);
 
-        let allData = [];
-        let allMarkers = [];
-        let markerClusterGroup = L.markerClusterGroup();
+        let allData = [];  // Will hold GeoJSON features
+        let allFeatures = [];  // Original unfiltered GeoJSON features
+        let markersLayer = L.layerGroup().addTo(map);  // Layer for markers
+        let superclusterIndex = null;  // Supercluster instance
 
         // Notes feature variables
         // IMPORTANT: Replace this URL with your deployed Google Apps Script web app URL
@@ -843,68 +875,63 @@
         let mobileSortDir = 'asc';
 
         // Unified borough configuration - single source of truth
+        // Keys match the borough names in the GeoJSON data (lowercase, spaces removed)
         const BOROUGH_CONFIG = {
-            brent: {
-                displayName: 'Brent',
-                licensingUrl: 'https://www.brent.gov.uk/housing/landlords/property-licensing#findoutifyouneedalicence',
-                registerUrl: 'https://www.brent.gov.uk/-/media/files/resident-documents/housing-documents/online-register-of-licenced-properties.pdf?',
-                email: 'prslicensing@brent.gov.uk'
+            'barking and dagenham': {
+                displayName: 'Barking and Dagenham',
+                licensingUrl: 'https://www.lbbd.gov.uk/housing/private-renting/landlord-licensing',
+                registerUrl: 'https://www.lbbd.gov.uk/housing/private-renting/landlord-licensing',
+                email: 'propertylicensing@lbbd.gov.uk'
             },
-            hackney: {
+            'hackney': {
                 displayName: 'Hackney',
                 licensingUrl: 'https://www.hackney.gov.uk/property-licensing',
                 registerUrl: 'https://propertylicensing.hackney.gov.uk/public-register',
                 email: 'property.licensing@hackney.gov.uk'
             },
-            haringey: {
+            'haringey': {
                 displayName: 'Haringey',
                 licensingUrl: 'https://www.haringey.gov.uk/housing/property-licensing',
                 registerUrl: 'https://propertylicensing.haringey.gov.uk/public-register',
                 email: 'propertylicensing@haringey.gov.uk'
             },
-            islington: {
+            'havering': {
+                displayName: 'Havering',
+                licensingUrl: 'https://www.havering.gov.uk/info/20034/private_housing/627/landlord_licensing',
+                registerUrl: 'https://www.havering.gov.uk/info/20034/private_housing/627/landlord_licensing',
+                email: 'landlordlicensing@havering.gov.uk'
+            },
+            'islington': {
                 displayName: 'Islington',
                 licensingUrl: 'https://www.islington.gov.uk/housing/private-sector-housing/landlords/houses-in-multiple-occupation-hmos',
                 registerUrl: 'https://propertylicensing.islington.gov.uk/public-register',
                 email: 'property.licensing@islington.gov.uk'
             },
-            lambeth: {
+            'lambeth': {
                 displayName: 'Lambeth',
                 licensingUrl: 'https://www.lambeth.gov.uk/housing/landlords-licensing',
                 registerUrl: 'https://hmolicensing.lambeth.gov.uk/public-register',
                 email: 'prslicensing@lambeth.gov.uk'
             },
-            lewisham: {
+            'lewisham': {
                 displayName: 'Lewisham',
                 licensingUrl: 'https://lewisham.gov.uk/myservices/housing/private-tenants-and-landlords/landlords',
                 registerUrl: 'https://lewisham.metastreet.co.uk/public-register',
                 email: 'pshe@lewisham.gov.uk'
             },
-            newham: {
-                displayName: 'Newham',
-                licensingUrl: 'http://www.newham.gov.uk/Pages/Services/Private-rented-property-licensing.aspx',
-                registerUrl: 'https://www.newham.gov.uk/landlords-newham/rented-property-licensing/6',
-                email: 'propertylicensing@newham.gov.uk'
+            'southwark': {
+                displayName: 'Southwark',
+                licensingUrl: 'https://www.southwark.gov.uk/housing/private-housing/landlord-licensing',
+                registerUrl: 'https://www.southwark.gov.uk/housing/private-housing/landlord-licensing',
+                email: 'landlord.licensing@southwark.gov.uk'
             },
-            southwalk: {
-                displayName: 'Southwalk',
-                licensingUrl: 'https://www.southwark.gov.uk/housing/private-tenants-and-landlords/private-rented-property-licensing',
-                registerUrl: 'https://southwark.metastreet.co.uk/public-register',
-                email: 'resi@southwark.gov.uk'
-            },
-            towerhamlets: {
-                displayName: 'Tower Hamlets',
-                licensingUrl: 'https://www.towerhamlets.gov.uk/lgnl/housing/Private-tenants-landlords-and-homeowners/Private-Landlords/Landlord_Licensing_Schemes.aspx',
-                registerUrl: 'https://www.towerhamlets.gov.uk/lgnl/housing/Private-tenants-landlords-and-homeowners/Private-Landlords/Private-landlords.aspx',
-                email: 'housinglicensing@towerhamlets.gov.uk'
-            },
-            walthamforest: {
+            'waltham forest': {
                 displayName: 'Waltham Forest',
                 licensingUrl: 'https://www.walthamforest.gov.uk/service-categories/private-landlords',
                 registerUrl: 'https://propertylicensing.walthamforest.gov.uk/public-register',
                 email: 'propertylicensing@walthamforest.gov.uk'
             },
-            westminster: {
+            'westminster': {
                 displayName: 'Westminster',
                 licensingUrl: 'https://www.westminster.gov.uk/housing/private-sector-housing',
                 registerUrl: 'https://westminster.metastreet.co.uk/public-register',
@@ -913,9 +940,44 @@
         };
 
         // Helper: Columns to exclude from display
-        const EXCLUDED_COLUMNS = new Set(['latitude', 'longitude', 'lat', 'lng', 'lon', 'borough']);
+        const EXCLUDED_COLUMNS = new Set(['latitude', 'longitude', 'lat', 'lng', 'lon', 'property_id']);
         function isDisplayableColumn(key) {
             return !key.startsWith('_') && !EXCLUDED_COLUMNS.has(key.toLowerCase());
+        }
+
+        // Helper: Format field names for display (snake_case -> Title Case)
+        function formatFieldName(key) {
+            // Special cases for common field names
+            const specialNames = {
+                'licence_holder_name': 'Landlord',
+                'managing_agent_name': 'Agent',
+                'licence_holder_address': 'Landlord Address',
+                'managing_agent_address': 'Agent Address',
+                'licence_type': 'Licence Type',
+                'licence_reference_number': 'Licence Number',
+                'licence_start_date': 'Licence Start',
+                'licence_end_date': 'Licence End',
+                'license_number': 'Licence Number',
+                'license_start_date': 'Licence Start',
+                'license_end_date': 'Licence End',
+                'no._of_storeys': 'Storeys',
+                'no._of_non_self_contained_flats': 'Non Self-Contained Flats',
+                'sleeping_accommodation': 'Bedrooms',
+                'living_accommodation': 'Living Rooms',
+                'maximum_permitted_occupants': 'Max Occupants',
+                'maximum_permitted_households': 'Max Households',
+                'year_built': 'Year Built',
+                'property_description': 'Property Type'
+            };
+
+            if (specialNames[key]) {
+                return specialNames[key];
+            }
+
+            // Convert snake_case to Title Case
+            return key
+                .replace(/_/g, ' ')
+                .replace(/\b\w/g, c => c.toUpperCase());
         }
 
         // Helper: Escape HTML to prevent XSS
@@ -972,11 +1034,17 @@
                 const select = document.getElementById(id);
                 if (!select) return;
                 select.innerHTML = '';
+                // Add "All boroughs" option first
+                const allOption = document.createElement('option');
+                allOption.value = '';
+                allOption.textContent = 'All boroughs';
+                allOption.selected = true;
+                select.appendChild(allOption);
+                // Add individual boroughs
                 Object.entries(BOROUGH_CONFIG).forEach(([key, config]) => {
                     const option = document.createElement('option');
                     option.value = key;
                     option.textContent = config.displayName;
-                    if (key === 'hackney') option.selected = true;
                     select.appendChild(option);
                 });
             });
@@ -1116,27 +1184,35 @@
             }
         }
 
-        // Filter and display markers
-        function updateMarkers() {
+        // Filter data and rebuild Supercluster index
+        function rebuildIndex() {
+            const boroughFilter = document.getElementById('boroughSelector').value;
             const landlordFilter = document.getElementById('landlordFilter').value;
             const agentFilter = document.getElementById('agentFilter').value;
             const postcodeFilter = document.getElementById('postcodeFilter').value.replace(/\s/g, '').toUpperCase();
             const noteFilter = document.getElementById('noteFilter').value;
 
-            // Clear existing markers from cluster group
-            markerClusterGroup.clearLayers();
-            allMarkers = [];
+            // Filter features
+            const filteredFeatures = allFeatures.filter(feature => {
+                const props = feature.properties;
 
-            // Filter and add markers (using pre-normalized postcodes)
-            const filteredData = allData.filter(row => {
-                const matchesLandlord = !landlordFilter || row.Landlord === landlordFilter;
-                const matchesAgent = !agentFilter || row.Agent === agentFilter;
-                const matchesPostcode = !postcodeFilter || (row._normalizedPostcode && row._normalizedPostcode.startsWith(postcodeFilter));
+                // Borough filter (data has lowercase 'borough')
+                const matchesBorough = !boroughFilter || props.borough?.toLowerCase() === boroughFilter.toLowerCase();
+
+                // Landlord filter (data has 'licence_holder_name')
+                const matchesLandlord = !landlordFilter || props.licence_holder_name === landlordFilter;
+
+                // Agent filter (data has 'managing_agent_name')
+                const matchesAgent = !agentFilter || props.managing_agent_name === agentFilter;
+
+                // Postcode filter (data has lowercase 'postcode')
+                const normalizedPostcode = props.postcode ? props.postcode.replace(/\s/g, '').toUpperCase() : '';
+                const matchesPostcode = !postcodeFilter || normalizedPostcode.startsWith(postcodeFilter);
 
                 // Note filter
                 let matchesNotes = true;
                 if (noteFilter) {
-                    const address = row.Address || row.address;
+                    const address = props.address;
                     const hasNotes = address && notesData[address] && notesData[address].length > 0;
                     if (noteFilter === 'with') {
                         matchesNotes = hasNotes;
@@ -1145,22 +1221,97 @@
                     }
                 }
 
-                return matchesLandlord && matchesAgent && matchesPostcode && matchesNotes;
+                return matchesBorough && matchesLandlord && matchesAgent && matchesPostcode && matchesNotes;
             });
 
-            filteredData.forEach(row => {
-                const lat = addJitter(row.latitude || row.Latitude || row.lat);
-                const lng = addJitter(row.longitude || row.Longitude || row.lng || row.lon);
+            // Update allData for list view compatibility (convert features to row format)
+            allData = filteredFeatures.map(f => ({
+                ...f.properties,
+                latitude: f.geometry.coordinates[1],
+                longitude: f.geometry.coordinates[0],
+                _normalizedPostcode: f.properties.postcode ? f.properties.postcode.replace(/\s/g, '').toUpperCase() : ''
+            }));
 
-                if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
-                    const address = row.Address || row.address;
+            // Create new Supercluster index
+            superclusterIndex = new Supercluster({
+                radius: 60,
+                maxZoom: 17,
+                minZoom: 0,
+                extent: 256,
+                nodeSize: 64
+            });
+
+            superclusterIndex.load(filteredFeatures);
+
+            // Update result count
+            const resultCountElement = document.getElementById('resultCount');
+            const hasFilters = boroughFilter || landlordFilter || agentFilter || postcodeFilter || noteFilter;
+            if (hasFilters) {
+                resultCountElement.textContent = `${filteredFeatures.length} result${filteredFeatures.length !== 1 ? 's' : ''}`;
+            } else {
+                resultCountElement.textContent = `${filteredFeatures.length} properties`;
+            }
+
+            // Render clusters for current view
+            updateClusters();
+        }
+
+        // Render clusters/markers for current map viewport
+        function updateClusters() {
+            if (!superclusterIndex) return;
+
+            // Clear existing markers
+            markersLayer.clearLayers();
+
+            // Get current map bounds and zoom
+            const bounds = map.getBounds();
+            const zoom = Math.floor(map.getZoom());
+            const bbox = [
+                bounds.getWest(),
+                bounds.getSouth(),
+                bounds.getEast(),
+                bounds.getNorth()
+            ];
+
+            // Get clusters for current viewport
+            const clusters = superclusterIndex.getClusters(bbox, zoom);
+
+            clusters.forEach(cluster => {
+                const [lng, lat] = cluster.geometry.coordinates;
+                const props = cluster.properties;
+
+                if (props.cluster) {
+                    // It's a cluster - create cluster marker
+                    const count = props.point_count;
+                    const size = count < 10 ? 'small' : count < 100 ? 'medium' : count < 1000 ? 'large' : 'xlarge';
+                    const displayCount = count >= 1000 ? Math.round(count / 1000) + 'k' : count;
+
+                    const icon = L.divIcon({
+                        html: `<div class="cluster-marker ${size}">${displayCount}</div>`,
+                        className: '',
+                        iconSize: L.point(size === 'small' ? 30 : size === 'medium' ? 40 : size === 'large' ? 50 : 60,
+                                          size === 'small' ? 30 : size === 'medium' ? 40 : size === 'large' ? 50 : 60)
+                    });
+
+                    const marker = L.marker([lat, lng], { icon });
+
+                    // Zoom in on cluster click
+                    marker.on('click', () => {
+                        const expansionZoom = superclusterIndex.getClusterExpansionZoom(props.cluster_id);
+                        map.setView([lat, lng], Math.min(expansionZoom, 18));
+                    });
+
+                    markersLayer.addLayer(marker);
+                } else {
+                    // It's a single point - create regular marker with popup
+                    const address = props.address;
                     const notes = getNotesForAddress(address);
                     const noteCount = notes.length;
 
                     let popupContent = '<div style="max-width: 250px;">';
-                    Object.keys(row).forEach(key => {
-                        if (isDisplayableColumn(key) && row[key]) {
-                            popupContent += `<strong>${escapeHtml(key)}:</strong> ${escapeHtml(row[key])}<br>`;
+                    Object.keys(props).forEach(key => {
+                        if (isDisplayableColumn(key) && props[key]) {
+                            popupContent += `<strong>${escapeHtml(formatFieldName(key))}:</strong> ${escapeHtml(props[key])}<br>`;
                         }
                     });
 
@@ -1169,48 +1320,37 @@
                         popupContent += `<br><strong style="color: #e63946;">${noteCount} note${noteCount !== 1 ? 's' : ''}</strong>`;
                     }
 
-                    // Add "View Notes" button with data attribute (avoids XSS via onclick)
+                    // Add "View Notes" button
                     popupContent += `<br><button class="view-notes-btn" data-address="${escapeHtml(address)}">View Notes</button>`;
-
                     popupContent += '</div>';
 
                     const marker = L.marker([lat, lng]);
                     marker.bindPopup(popupContent);
 
-                    // Store property data on marker for click handler
-                    marker.propertyData = row;
+                    // Store property data for click handler
+                    marker.propertyData = {
+                        ...props,
+                        latitude: lat,
+                        longitude: lng
+                    };
 
                     // Add click handler to show notes panel on wider screens
                     marker.on('click', function() {
                         selectedProperty = this.propertyData;
-                        // Only auto-open notes panel on desktop
                         if (window.innerWidth >= 950) {
                             document.getElementById('notesPanel').classList.remove('hidden');
                             updateNotesPanel();
                         }
                     });
 
-                    markerClusterGroup.addLayer(marker);
-                    allMarkers.push(marker);
+                    markersLayer.addLayer(marker);
                 }
             });
+        }
 
-            // Add cluster group to map
-            map.addLayer(markerClusterGroup);
-
-            // Fit map to show all markers
-            if (allMarkers.length > 0) {
-                const group = new L.featureGroup(allMarkers);
-                map.fitBounds(group.getBounds().pad(0.1));
-            }
-
-            // Update result count
-            const resultCountElement = document.getElementById('resultCount');
-            if (landlordFilter || agentFilter || postcodeFilter || noteFilter) {
-                resultCountElement.textContent = `${filteredData.length} result${filteredData.length !== 1 ? 's' : ''}`;
-            } else {
-                resultCountElement.textContent = '';
-            }
+        // Legacy function name for compatibility
+        function updateMarkers() {
+            rebuildIndex();
         }
 
         // Variables for slim-select instances
@@ -1226,8 +1366,8 @@
             document.getElementById('loadingOverlay').classList.add('hidden');
         }
 
-        // Load CSV for a specific borough
-        function loadBorough(borough, isInitialLoad = false) {
+        // Load GeoJSON data
+        async function loadGeoJSON(isInitialLoad = false) {
             showLoading();
 
             // Track start time for minimum loading duration on initial load
@@ -1235,8 +1375,8 @@
 
             // Clear existing data
             allData = [];
-            markerClusterGroup.clearLayers();
-            allMarkers = [];
+            allFeatures = [];
+            markersLayer.clearLayers();
             document.getElementById('postcodeFilter').value = '';
 
             // Clear table filters and sort
@@ -1260,149 +1400,165 @@
                 document.getElementById('mobileSortDirection').dataset.direction = 'asc';
             }
 
-            const csvUrl = `https://raw.githubusercontent.com/codev/licensemap/main/${borough}.csv`;
+            const geojsonUrl = 'https://raw.githubusercontent.com/codev/licensemap/main/licenses.geojson';
 
-            Papa.parse(csvUrl, {
-                download: true,
-                header: true,
-                dynamicTyping: true,
-                skipEmptyLines: true,
-                complete: async results => {
-                    allData = results.data;
-
-                    // Pre-normalize postcodes for faster filtering
-                    allData.forEach(row => {
-                        if (row.Postcode) {
-                            row._normalizedPostcode = row.Postcode.replace(/\s/g, '').toUpperCase();
-                        }
-                    });
-
-                    console.log(`Loaded ${allData.length} properties from ${borough}.csv`);
-
-                    // Count occurrences and populate dropdowns
-                    const landlordCounts = {};
-                    const agentCounts = {};
-
-                    allData.forEach(row => {
-                        if (row.Landlord) {
-                            landlordCounts[row.Landlord] = (landlordCounts[row.Landlord] || 0) + 1;
-                        }
-                        if (row.Agent) {
-                            agentCounts[row.Agent] = (agentCounts[row.Agent] || 0) + 1;
-                        }
-                    });
-
-                    const landlordSelect = document.getElementById('landlordFilter');
-                    const agentSelect = document.getElementById('agentFilter');
-
-                    // Clear existing options (except first one)
-                    landlordSelect.innerHTML = '<option value="">&lt;All landlords...&gt;</option>';
-                    agentSelect.innerHTML = '<option value="">&lt;All agents...&gt;</option>';
-
-                    // Sort by count (highest first) and populate
-                    Object.entries(landlordCounts)
-                        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-                        .forEach(([landlord, count]) => {
-                            const option = document.createElement('option');
-                            option.value = landlord;
-                            const displayName = landlord.length > 30 ? landlord.substring(0, 30) + '...' : landlord;
-                            option.textContent = `${displayName} (${count})`;
-                            option.title = landlord;
-                            landlordSelect.appendChild(option);
-                        });
-
-                    Object.entries(agentCounts)
-                        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-                        .forEach(([agent, count]) => {
-                            const option = document.createElement('option');
-                            option.value = agent;
-                            const displayName = agent.length > 30 ? agent.substring(0, 30) + '...' : agent;
-                            option.textContent = `${displayName} (${count})`;
-                            option.title = agent;
-                            agentSelect.appendChild(option);
-                        });
-
-                    // Destroy existing slim-select instances if they exist
-                    if (landlordSlimSelect) {
-                        landlordSlimSelect.destroy();
-                    }
-                    if (agentSlimSelect) {
-                        agentSlimSelect.destroy();
-                    }
-
-                    // Initialize slim-select for landlord dropdown
-                    landlordSlimSelect = new SlimSelect({
-                        select: '#landlordFilter',
-                        settings: {
-                            showSearch: true,
-                            searchPlaceholder: 'Search landlords...',
-                            searchHighlight: true,
-                            closeOnSelect: true
-                        },
-                        events: {
-                            afterChange: () => {
-                                agentSlimSelect.setSelected('');
-                                document.getElementById('postcodeFilter').value = '';
-                                updateMarkers();
-                            }
-                        }
-                    });
-
-                    // Initialize slim-select for agent dropdown
-                    agentSlimSelect = new SlimSelect({
-                        select: '#agentFilter',
-                        settings: {
-                            showSearch: true,
-                            searchPlaceholder: 'Search agents...',
-                            searchHighlight: true,
-                            closeOnSelect: true
-                        },
-                        events: {
-                            afterChange: () => {
-                                landlordSlimSelect.setSelected('');
-                                document.getElementById('postcodeFilter').value = '';
-                                updateMarkers();
-                            }
-                        }
-                    });
-
-                    // Initial display
-                    updateMarkers();
-
-                    // Also render table/cards if in list view
-                    if (currentView === 'list') {
-                        updateLicensingInfo(borough, 'listViewLicensingInfo');
-                        renderTable();
-                        renderMobileCards();
-                    }
-
-                    // On initial load, wait for both notes to load and minimum 6-second duration
-                    if (isInitialLoad) {
-                        // Create a promise for the minimum loading time
-                        const minLoadTime = new Promise(resolve => {
-                            const elapsed = Date.now() - startTime;
-                            const remaining = Math.max(0, 6000 - elapsed);
-                            setTimeout(resolve, remaining);
-                        });
-
-                        // Wait for both notes to load and minimum time to pass
-                        await Promise.all([
-                            loadNotes(true), // Pass true to refresh markers on initial load
-                            minLoadTime
-                        ]);
-                    } else {
-                        // On borough change, don't wait for notes
-                        loadNotes(true); // Pass true to refresh markers
-                    }
-
-                    hideLoading();
-                },
-                error: error => {
-                    console.error('Error loading CSV:', error);
-                    alert(`Failed to load ${borough} data. Please try again.`);
-                    hideLoading();
+            try {
+                const response = await fetch(geojsonUrl);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
-            });
+
+                const geojson = await response.json();
+                allFeatures = geojson.features || [];
+
+                console.log(`Loaded ${allFeatures.length} properties from licenses.geojson`);
+
+                // Count occurrences for dropdowns (across all features)
+                // Data uses 'licence_holder_name' for landlord and 'managing_agent_name' for agent
+                const landlordCounts = {};
+                const agentCounts = {};
+
+                allFeatures.forEach(feature => {
+                    const props = feature.properties;
+                    if (props.licence_holder_name) {
+                        landlordCounts[props.licence_holder_name] = (landlordCounts[props.licence_holder_name] || 0) + 1;
+                    }
+                    if (props.managing_agent_name) {
+                        agentCounts[props.managing_agent_name] = (agentCounts[props.managing_agent_name] || 0) + 1;
+                    }
+                });
+
+                const landlordSelect = document.getElementById('landlordFilter');
+                const agentSelect = document.getElementById('agentFilter');
+
+                // Clear existing options (except first one)
+                landlordSelect.innerHTML = '<option value="">&lt;All landlords...&gt;</option>';
+                agentSelect.innerHTML = '<option value="">&lt;All agents...&gt;</option>';
+
+                // Sort by count (highest first) and populate
+                Object.entries(landlordCounts)
+                    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+                    .forEach(([landlord, count]) => {
+                        const option = document.createElement('option');
+                        option.value = landlord;
+                        const displayName = landlord.length > 30 ? landlord.substring(0, 30) + '...' : landlord;
+                        option.textContent = `${displayName} (${count})`;
+                        option.title = landlord;
+                        landlordSelect.appendChild(option);
+                    });
+
+                Object.entries(agentCounts)
+                    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+                    .forEach(([agent, count]) => {
+                        const option = document.createElement('option');
+                        option.value = agent;
+                        const displayName = agent.length > 30 ? agent.substring(0, 30) + '...' : agent;
+                        option.textContent = `${displayName} (${count})`;
+                        option.title = agent;
+                        agentSelect.appendChild(option);
+                    });
+
+                // Destroy existing slim-select instances if they exist
+                if (landlordSlimSelect) {
+                    landlordSlimSelect.destroy();
+                }
+                if (agentSlimSelect) {
+                    agentSlimSelect.destroy();
+                }
+
+                // Initialize slim-select for landlord dropdown
+                landlordSlimSelect = new SlimSelect({
+                    select: '#landlordFilter',
+                    settings: {
+                        showSearch: true,
+                        searchPlaceholder: 'Search landlords...',
+                        searchHighlight: true,
+                        closeOnSelect: true
+                    },
+                    events: {
+                        afterChange: () => {
+                            agentSlimSelect.setSelected('');
+                            document.getElementById('postcodeFilter').value = '';
+                            rebuildIndex();
+                        }
+                    }
+                });
+
+                // Initialize slim-select for agent dropdown
+                agentSlimSelect = new SlimSelect({
+                    select: '#agentFilter',
+                    settings: {
+                        showSearch: true,
+                        searchPlaceholder: 'Search agents...',
+                        searchHighlight: true,
+                        closeOnSelect: true
+                    },
+                    events: {
+                        afterChange: () => {
+                            landlordSlimSelect.setSelected('');
+                            document.getElementById('postcodeFilter').value = '';
+                            rebuildIndex();
+                        }
+                    }
+                });
+
+                // Build initial index and display
+                rebuildIndex();
+
+                // Fit map to data bounds
+                if (allFeatures.length > 0) {
+                    const bounds = L.latLngBounds(allFeatures.map(f => [
+                        f.geometry.coordinates[1],
+                        f.geometry.coordinates[0]
+                    ]));
+                    map.fitBounds(bounds.pad(0.1));
+                }
+
+                // Also render table/cards if in list view
+                if (currentView === 'list') {
+                    const borough = document.getElementById('boroughSelector').value;
+                    updateLicensingInfo(borough, 'listViewLicensingInfo');
+                    renderTable();
+                    renderMobileCards();
+                }
+
+                // On initial load, wait for both notes to load and minimum 3-second duration
+                if (isInitialLoad) {
+                    const minLoadTime = new Promise(resolve => {
+                        const elapsed = Date.now() - startTime;
+                        const remaining = Math.max(0, 3000 - elapsed);
+                        setTimeout(resolve, remaining);
+                    });
+
+                    await Promise.all([
+                        loadNotes(true),
+                        minLoadTime
+                    ]);
+                } else {
+                    loadNotes(true);
+                }
+
+                hideLoading();
+
+            } catch (error) {
+                console.error('Error loading GeoJSON:', error);
+                alert(`Failed to load data from licenses.geojson. Please ensure the file exists.`);
+                hideLoading();
+            }
+        }
+
+        // Legacy function for compatibility
+        function loadBorough(borough, isInitialLoad = false) {
+            // Borough filtering is now handled in rebuildIndex()
+            // Just trigger a rebuild with the new borough filter
+            rebuildIndex();
+
+            // Update list view if needed
+            if (currentView === 'list') {
+                updateLicensingInfo(borough, 'listViewLicensingInfo');
+                renderTable();
+                renderMobileCards();
+            }
         }
 
         // Add event listener for note filter (one time setup)
@@ -1425,15 +1581,35 @@
             // Sync with list view borough selector
             document.getElementById('listViewBoroughSelector').value = selectedBorough;
             // Update map licensing info
-            updateLicensingInfo(selectedBorough, 'mapLicensingInfo');
-            loadBorough(selectedBorough);
+            if (selectedBorough) {
+                updateLicensingInfo(selectedBorough, 'mapLicensingInfo');
+            } else {
+                document.getElementById('mapLicensingInfo').innerHTML = '<em>Select a borough to see licensing details</em>';
+            }
+            // Rebuild index with new borough filter
+            rebuildIndex();
+            // Update list view if needed
+            if (currentView === 'list') {
+                if (selectedBorough) {
+                    updateLicensingInfo(selectedBorough, 'listViewLicensingInfo');
+                } else {
+                    document.getElementById('listViewLicensingInfo').innerHTML = '<em>Select a borough to see licensing details</em>';
+                }
+                renderTable();
+                renderMobileCards();
+            }
         });
 
-        // Load default borough (Hackney) on page load
+        // Update clusters when map moves or zooms
+        map.on('moveend', updateClusters);
+        map.on('zoomend', updateClusters);
+
+        // Load GeoJSON on page load
         // Populate dropdowns from config
         populateBoroughDropdowns();
-        updateLicensingInfo('hackney', 'mapLicensingInfo');
-        loadBorough('hackney', true); // true = isInitialLoad, wait for notes and show loading for min 6 seconds
+        // No specific borough info when showing all
+        document.getElementById('mapLicensingInfo').innerHTML = '<em>Select a borough to see licensing details</em>';
+        loadGeoJSON(true); // true = isInitialLoad
 
         // Close button functionality
         document.getElementById('closeNotesBtn').addEventListener('click', function() {
