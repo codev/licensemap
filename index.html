@@ -877,6 +877,8 @@
         let tableFilters = {};
         let tableSortColumn = null;
         let tableSortDirection = 'asc';
+        let tableHeadersRendered = false;
+        let lastTableColumnsKey = '';
 
         // Mobile view variables
         let mobileGlobalFilter = '';
@@ -889,6 +891,10 @@
         let currentPage = 1;
         const PAGE_SIZE = 50;
         let lastFilteredData = []; // Cache filtered/sorted data for pagination
+
+        // Filter cache for performance (keyed by filter state)
+        let filterCache = {};
+        let lastFilterKey = '';
 
         // Unified borough configuration - single source of truth
         // Keys match the borough names in the GeoJSON data (lowercase, spaces removed)
@@ -1096,6 +1102,9 @@
                         notesData[address].push(note);
                     });
 
+                    // Clear filter cache since note-based filters may now return different results
+                    filterCache = {};
+
                     console.log(`Loaded ${data.notes.length} notes for ${Object.keys(notesData).length} properties`);
 
                     // Only update markers on initial load, not during auto-refresh
@@ -1208,12 +1217,36 @@
             const postcodeFilter = document.getElementById('postcodeFilter').value.replace(/\s/g, '').toUpperCase();
             const noteFilter = document.getElementById('noteFilter').value;
 
-            // Filter features
+            // Create cache key from filter state
+            const filterKey = `${boroughFilter}|${landlordFilter}|${agentFilter}|${postcodeFilter}|${noteFilter}`;
+
+            // Check cache for existing results
+            if (filterCache[filterKey]) {
+                const cached = filterCache[filterKey];
+                allData = cached.allData;
+                superclusterIndex = cached.superclusterIndex;
+
+                // Update result count from cached data
+                const resultCountElement = document.getElementById('resultCount');
+                const hasFilters = boroughFilter || landlordFilter || agentFilter || postcodeFilter || noteFilter;
+                if (hasFilters) {
+                    resultCountElement.textContent = `${allData.length} result${allData.length !== 1 ? 's' : ''}`;
+                } else {
+                    resultCountElement.textContent = `${allData.length} properties`;
+                }
+
+                // Render clusters for current view
+                updateClusters();
+                return;
+            }
+
+            // Filter features using pre-computed normalized values
+            const boroughFilterLower = boroughFilter.toLowerCase();
             const filteredFeatures = allFeatures.filter(feature => {
                 const props = feature.properties;
 
-                // Borough filter (data has lowercase 'borough')
-                const matchesBorough = !boroughFilter || props.borough?.toLowerCase() === boroughFilter.toLowerCase();
+                // Borough filter (using pre-computed _boroughLower)
+                const matchesBorough = !boroughFilter || props._boroughLower === boroughFilterLower;
 
                 // Landlord filter (data has 'licence_holder_name')
                 const matchesLandlord = !landlordFilter || props.licence_holder_name === landlordFilter;
@@ -1221,9 +1254,8 @@
                 // Agent filter (data has 'managing_agent_name')
                 const matchesAgent = !agentFilter || props.managing_agent_name === agentFilter;
 
-                // Postcode filter (data has lowercase 'postcode')
-                const normalizedPostcode = props.postcode ? props.postcode.replace(/\s/g, '').toUpperCase() : '';
-                const matchesPostcode = !postcodeFilter || normalizedPostcode.startsWith(postcodeFilter);
+                // Postcode filter (using pre-computed _normalizedPostcode)
+                const matchesPostcode = !postcodeFilter || props._normalizedPostcode.startsWith(postcodeFilter);
 
                 // Note filter
                 let matchesNotes = true;
@@ -1240,13 +1272,8 @@
                 return matchesBorough && matchesLandlord && matchesAgent && matchesPostcode && matchesNotes;
             });
 
-            // Update allData for list view compatibility (convert features to row format)
-            allData = filteredFeatures.map(f => ({
-                ...f.properties,
-                latitude: f.geometry.coordinates[1],
-                longitude: f.geometry.coordinates[0],
-                _normalizedPostcode: f.properties.postcode ? f.properties.postcode.replace(/\s/g, '').toUpperCase() : ''
-            }));
+            // Reference properties directly instead of copying (uses pre-computed _lat, _lng)
+            allData = filteredFeatures.map(f => f.properties);
 
             // Create new Supercluster index
             superclusterIndex = new Supercluster({
@@ -1258,6 +1285,14 @@
             });
 
             superclusterIndex.load(filteredFeatures);
+
+            // Cache the results (skip caching if note filter is active since notes can change)
+            if (!noteFilter) {
+                filterCache[filterKey] = {
+                    allData: allData,
+                    superclusterIndex: superclusterIndex
+                };
+            }
 
             // Update result count
             const resultCountElement = document.getElementById('resultCount');
@@ -1399,6 +1434,9 @@
             tableFilters = {};
             tableSortColumn = null;
             tableSortDirection = 'asc';
+            tableHeadersRendered = false;
+            lastTableColumnsKey = '';
+            filterCache = {}; // Clear filter cache on data reload
 
             // Clear mobile filters and sort
             mobileGlobalFilter = '';
@@ -1436,6 +1474,14 @@
 
                 allFeatures.forEach(feature => {
                     const props = feature.properties;
+                    // Pre-compute normalized values for faster filtering
+                    props._normalizedPostcode = props.postcode ?
+                        props.postcode.replace(/\s/g, '').toUpperCase() : '';
+                    props._boroughLower = props.borough ?
+                        props.borough.toLowerCase() : '';
+                    props._lat = feature.geometry.coordinates[1];
+                    props._lng = feature.geometry.coordinates[0];
+
                     if (props.licence_holder_name) {
                         landlordCounts[props.licence_holder_name] = (landlordCounts[props.licence_holder_name] || 0) + 1;
                     }
@@ -1776,72 +1822,87 @@
 
             // Determine columns from first row, excluding internal ones and Borough
             const firstRow = allData[0];
-            tableColumns = Object.keys(firstRow).filter(isDisplayableColumn);
+            const newColumns = Object.keys(firstRow).filter(isDisplayableColumn);
 
             // Add Notes column at the end
-            tableColumns.push('Notes');
+            newColumns.push('Notes');
             // Add Actions column
-            tableColumns.push('Actions');
+            newColumns.push('Actions');
 
-            // Render headers
-            const headersRow = document.getElementById('tableHeaders');
-            headersRow.innerHTML = '';
-            tableColumns.forEach(column => {
-                const th = document.createElement('th');
-                th.textContent = column;
-                if (column !== 'Actions') {
-                    th.className = 'sortable';
-                    th.dataset.column = column;
-                    th.addEventListener('click', () => sortTable(column));
-                }
-                headersRow.appendChild(th);
-            });
+            // Check if columns have changed (only rebuild headers if needed)
+            const columnsKey = newColumns.join('|');
+            const columnsChanged = columnsKey !== lastTableColumnsKey;
 
-            // Render filter inputs
-            const filtersRow = document.getElementById('tableFilters');
-            filtersRow.innerHTML = '';
-            tableColumns.forEach(column => {
-                const th = document.createElement('th');
+            if (columnsChanged) {
+                tableColumns = newColumns;
+                lastTableColumnsKey = columnsKey;
+                tableHeadersRendered = false;
+            }
 
-                if (column === 'Actions') {
-                    // Empty cell for Actions column
+            // Only render headers if they haven't been rendered or columns changed
+            if (!tableHeadersRendered) {
+                // Render headers
+                const headersRow = document.getElementById('tableHeaders');
+                headersRow.innerHTML = '';
+                tableColumns.forEach(column => {
+                    const th = document.createElement('th');
+                    th.textContent = column;
+                    if (column !== 'Actions') {
+                        th.className = 'sortable';
+                        th.dataset.column = column;
+                        th.addEventListener('click', () => sortTable(column));
+                    }
+                    headersRow.appendChild(th);
+                });
+
+                // Render filter inputs
+                const filtersRow = document.getElementById('tableFilters');
+                filtersRow.innerHTML = '';
+                tableColumns.forEach(column => {
+                    const th = document.createElement('th');
+
+                    if (column === 'Actions') {
+                        // Empty cell for Actions column
+                        filtersRow.appendChild(th);
+                        return;
+                    } else if (column === 'Notes') {
+                        // Special dropdown filter for Notes column
+                        const select = document.createElement('select');
+                        select.style.width = '100%';
+                        select.style.padding = '5px';
+                        select.style.border = '1px solid #ccc';
+                        select.style.borderRadius = '3px';
+                        select.style.fontSize = '12px';
+                        select.innerHTML = `
+                            <option value="">All</option>
+                            <option value="has_notes">Has notes</option>
+                            <option value="no_notes">No notes</option>
+                        `;
+                        select.addEventListener('change', (e) => {
+                            tableFilters[column] = e.target.value;
+                            currentPage = 1; // Reset to first page on filter change
+                            filterAndRenderTableRows();
+                        });
+                        th.appendChild(select);
+                    } else {
+                        // Regular text input for other columns
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.placeholder = `Filter ${column}...`;
+                        input.dataset.column = column;
+                        input.addEventListener('input', debounce((e) => {
+                            tableFilters[column] = e.target.value.toLowerCase();
+                            currentPage = 1; // Reset to first page on filter change
+                            filterAndRenderTableRows();
+                        }, 300));
+                        th.appendChild(input);
+                    }
+
                     filtersRow.appendChild(th);
-                    return;
-                } else if (column === 'Notes') {
-                    // Special dropdown filter for Notes column
-                    const select = document.createElement('select');
-                    select.style.width = '100%';
-                    select.style.padding = '5px';
-                    select.style.border = '1px solid #ccc';
-                    select.style.borderRadius = '3px';
-                    select.style.fontSize = '12px';
-                    select.innerHTML = `
-                        <option value="">All</option>
-                        <option value="has_notes">Has notes</option>
-                        <option value="no_notes">No notes</option>
-                    `;
-                    select.addEventListener('change', (e) => {
-                        tableFilters[column] = e.target.value;
-                        currentPage = 1; // Reset to first page on filter change
-                        filterAndRenderTableRows();
-                    });
-                    th.appendChild(select);
-                } else {
-                    // Regular text input for other columns
-                    const input = document.createElement('input');
-                    input.type = 'text';
-                    input.placeholder = `Filter ${column}...`;
-                    input.dataset.column = column;
-                    input.addEventListener('input', debounce((e) => {
-                        tableFilters[column] = e.target.value.toLowerCase();
-                        currentPage = 1; // Reset to first page on filter change
-                        filterAndRenderTableRows();
-                    }, 300));
-                    th.appendChild(input);
-                }
+                });
 
-                filtersRow.appendChild(th);
-            });
+                tableHeadersRendered = true;
+            }
 
             // Render data rows
             filterAndRenderTableRows();
