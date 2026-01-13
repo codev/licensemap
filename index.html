@@ -688,6 +688,18 @@
             font-size: 15px;
         }
 
+        /* Leaflet popup styles for scrollable content */
+        .leaflet-popup-content {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        @media (max-width: 768px) {
+            .leaflet-popup-content {
+                max-height: 200px;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -1376,17 +1388,20 @@
                     popupContent += '</div>';
 
                     const marker = L.marker([lat, lng]);
-                    marker.bindPopup(popupContent);
+                    marker.bindPopup(popupContent, {
+                        maxHeight: 300,
+                        autoPan: true
+                    });
 
-                    // Store property data for click handler
+                    // Store property data for popupopen handler
                     marker.propertyData = {
                         ...props,
                         latitude: lat,
                         longitude: lng
                     };
 
-                    // Add click handler to show notes panel on wider screens
-                    marker.on('click', function() {
+                    // Use popupopen event to avoid interference with popup display
+                    marker.on('popupopen', function() {
                         selectedProperty = this.propertyData;
                         if (window.innerWidth >= 950) {
                             document.getElementById('notesPanel').classList.remove('hidden');
